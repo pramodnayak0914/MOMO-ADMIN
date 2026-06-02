@@ -125,6 +125,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    sessionStorage.setItem('admin-passcode', passcode);
                     document.getElementById('login-overlay').style.display = 'none';
                     document.getElementById('dashboard-content').classList.remove('hidden');
                     renderDashboard(data);
