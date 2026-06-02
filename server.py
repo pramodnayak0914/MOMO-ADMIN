@@ -79,6 +79,38 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 print(f"Error fetching admin data: {e}")
                 self._send_json(500, {"success": False, "error": str(e)})
+        elif self.path == '/api/admin/config':
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length == 0:
+                self._send_json(400, {"success": False, "error": "No payload"})
+                return
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data)
+                if data.get('passcode') != ADMIN_PASSCODE:
+                    self._send_json(401, {"success": False, "error": "Unauthorized"})
+                    return
+                
+                new_name = data.get('assistant_name')
+                if not new_name:
+                    self._send_json(400, {"success": False, "error": "Missing assistant_name"})
+                    return
+                
+                if DATABASE_URL and psycopg2:
+                    conn = psycopg2.connect(DATABASE_URL)
+                    cur = conn.cursor()
+                    cur.execute('''
+                        INSERT INTO app_config (key, value) 
+                        VALUES ('assistant_name', %s) 
+                        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                    ''', (new_name,))
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+                self._send_json(200, {"success": True})
+            except Exception as e:
+                print(f"Error setting config: {e}")
+                self._send_json(500, {"success": False, "error": str(e)})
         else:
             self.send_response(404)
             self.end_headers()

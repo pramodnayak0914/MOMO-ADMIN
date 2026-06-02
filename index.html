@@ -67,6 +67,17 @@
             </div>
         </div>
 
+        <h2 style="margin-bottom: 1rem; color: var(--text-light);">Global Settings</h2>
+        <div class="glass-card" style="margin-bottom: 3rem;">
+            <h3 style="margin-bottom: 1rem;">🤖 AI Assistant Name</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">This name will be updated instantly on the public website for all users.</p>
+            <div style="display: flex; gap: 1rem;">
+                <input type="text" id="admin-assistant-name" placeholder="e.g. OnlineRecharge" style="flex: 1; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;">
+                <button id="save-assistant-name" class="primary-glow-btn">Save</button>
+            </div>
+            <p id="save-settings-msg" style="color: #2ed573; margin-top: 1rem; display: none;">Successfully updated!</p>
+        </div>
+
         <h2 style="margin-bottom: 1rem; color: var(--text-light);">Recent Transactions</h2>
         <div style="overflow-x: auto;">
             <table class="data-table">
@@ -184,6 +195,29 @@
                 `;
             });
         }
+
+        document.getElementById('save-assistant-name').addEventListener('click', () => {
+            const newName = document.getElementById('admin-assistant-name').value.trim();
+            if (!newName) return;
+
+            const passcode = sessionStorage.getItem('admin-passcode');
+            fetch('/api/admin/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ passcode: passcode, assistant_name: newName })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    const msg = document.getElementById('save-settings-msg');
+                    msg.style.display = 'block';
+                    setTimeout(() => msg.style.display = 'none', 3000);
+                } else {
+                    alert('Error saving name: ' + data.error);
+                }
+            })
+            .catch(err => console.error(err));
+        });
     </script>
 </body>
 </html>
