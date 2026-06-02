@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOMO-AI Admin Portal</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="login-overlay">
+        <div class="login-box glass-card">
+            <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">Admin Access</h2>
+            <input type="password" id="admin-passcode" placeholder="Enter Passcode" style="width: 100%; margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;">
+            <button id="login-btn" class="primary-glow-btn full-width">Unlock Dashboard</button>
+            <p id="login-error" style="color: #ff4757; margin-top: 1rem; display: none;">Invalid Passcode</p>
+        </div>
+    </div>
+
+    <div class="admin-layout hidden" id="dashboard-content">
+        <div class="admin-header">
+            <div>
+                <h1 style="color: var(--text-light);">MOMO-AI Admin</h1>
+                <p style="color: var(--text-muted);">Real-time metrics and transactions.</p>
+            </div>
+            <button class="primary-glow-btn" id="logout-btn" style="padding: 0.5rem 1rem;">Lock</button>
+        </div>
+
+        <div class="admin-metrics">
+            <div class="metric-card">
+                <h3>Total Revenue</h3>
+                <div class="value" id="metric-revenue">₹0</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Successful Transactions</h3>
+                <div class="value" id="metric-tx-count">0</div>
+            </div>
+            <div class="metric-card">
+                <h3>Active Plans Sold</h3>
+                <div class="value" id="metric-plans-count">0</div>
+            </div>
+        </div>
+
+        <h2 style="margin-bottom: 1rem; color: var(--text-light);">Recent Transactions</h2>
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>User Identifier</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="tx-table-body">
+                    <!-- Rows injected via JS -->
+                </tbody>
+            </table>
+        </div>
+        
+        <h2 style="margin-top: 3rem; margin-bottom: 1rem; color: var(--text-light);">Recent Plan Activations</h2>
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Target Account</th>
+                        <th>Brand</th>
+                        <th>Plan Type</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="purchases-table-body">
+                    <!-- Rows injected via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const passcode = document.getElementById('admin-passcode').value;
+            fetch('/api/admin/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ passcode })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('dashboard-content').classList.remove('hidden');
+                    renderDashboard(data);
+                } else {
+                    document.getElementById('login-error').style.display = 'block';
+                }
+            })
+            .catch(err => {
+                document.getElementById('login-error').innerText = "Network Error";
+                document.getElementById('login-error').style.display = 'block';
+            });
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            document.getElementById('admin-passcode').value = '';
+            document.getElementById('dashboard-content').classList.add('hidden');
+            document.getElementById('login-overlay').style.display = 'flex';
+        });
+
+        function renderDashboard(data) {
+            let totalRevenue = 0;
+            let successCount = 0;
+            const txBody = document.getElementById('tx-table-body');
+            txBody.innerHTML = '';
+
+            data.transactions.forEach(tx => {
+                if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') {
+                    totalRevenue += tx.amount;
+                    successCount++;
+                }
+                let statusClass = 'pending';
+                if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') statusClass = 'success';
+                else if (tx.status.toLowerCase() === 'failed') statusClass = 'failed';
+
+                txBody.innerHTML += `
+                    <tr>
+                        <td>${tx.order_id}</td>
+                        <td>${tx.user_identifier}</td>
+                        <td>₹${tx.amount.toFixed(2)}</td>
+                        <td><span class="badge ${statusClass}">${tx.status.toUpperCase()}</span></td>
+                        <td>${new Date(tx.created_at).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('metric-revenue').innerText = '₹' + totalRevenue.toLocaleString();
+            document.getElementById('metric-tx-count').innerText = successCount;
+            document.getElementById('metric-plans-count').innerText = data.purchases.length;
+
+            const pBody = document.getElementById('purchases-table-body');
+            pBody.innerHTML = '';
+            data.purchases.forEach(p => {
+                pBody.innerHTML += `
+                    <tr>
+                        <td>${p.user_identifier}</td>
+                        <td>${p.brand_name}</td>
+                        <td><span class="badge" style="background: rgba(255,255,255,0.1); color: white;">${p.flow_type.toUpperCase()}</span></td>
+                        <td>${new Date(p.created_at).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
