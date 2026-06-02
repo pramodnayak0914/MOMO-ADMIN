@@ -31,6 +31,13 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 
                 transactions = []
                 purchases = []
+                analytics_summary = {
+                    'page_view': 0,
+                    'entered_number': 0,
+                    'logged_in': 0,
+                    'checkout_started': 0,
+                    'purchase_success': 0
+                }
                 
                 if DATABASE_URL and psycopg2:
                     conn = psycopg2.connect(DATABASE_URL)
@@ -49,6 +56,15 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                         p['created_at'] = str(p['created_at'])
                         purchases.append(dict(p))
                         
+                    try:
+                        cur.execute("SELECT event_type, COUNT(DISTINCT session_id) as count FROM analytics_events GROUP BY event_type")
+                        analytics_raw = cur.fetchall()
+                        for row in analytics_raw:
+                            if row['event_type'] in analytics_summary:
+                                analytics_summary[row['event_type']] = row['count']
+                    except Exception as e:
+                        print(f"Error fetching analytics (table might not exist yet): {e}")
+                        
                     cur.close()
                     conn.close()
                 else:
@@ -57,7 +73,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(200, {
                     "success": True,
                     "transactions": transactions,
-                    "purchases": purchases
+                    "purchases": purchases,
+                    "analytics": analytics_summary
                 })
             except Exception as e:
                 print(f"Error fetching admin data: {e}")
