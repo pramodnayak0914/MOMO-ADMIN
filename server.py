@@ -65,16 +65,27 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     except Exception as e:
                         print(f"Error fetching analytics (table might not exist yet): {e}")
                         
+                    current_assistant_name = ""
+                    try:
+                        cur.execute("SELECT value FROM app_config WHERE key = 'assistant_name'")
+                        row = cur.fetchone()
+                        if row:
+                            current_assistant_name = row['value']
+                    except Exception as e:
+                        print(f"Error fetching config: {e}")
+                        
                     cur.close()
                     conn.close()
                 else:
                     transactions = [{"order_id": "TEST", "status": "SUCCESS", "amount": 0, "created_at": "N/A"}]
+                    current_assistant_name = "Offline"
                 
                 self._send_json(200, {
                     "success": True,
                     "transactions": transactions,
                     "purchases": purchases,
-                    "analytics": analytics_summary
+                    "analytics": analytics_summary,
+                    "assistant_name": current_assistant_name
                 })
             except Exception as e:
                 print(f"Error fetching admin data: {e}")

@@ -147,6 +147,9 @@
         });
 
         function renderDashboard(data) {
+            if (data.assistant_name) {
+                document.getElementById('admin-assistant-name').value = data.assistant_name;
+            }
             let totalRevenue = 0;
             let successCount = 0;
             const txBody = document.getElementById('tx-table-body');
