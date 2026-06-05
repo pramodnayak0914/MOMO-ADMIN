@@ -14,6 +14,33 @@ PORT = int(os.environ.get('PORT', 8080))
 DATABASE_URL = os.environ.get('DATABASE_URL')
 ADMIN_PASSCODE = os.environ.get('ADMIN_PASSCODE', 'admin123')
 
+def init_db():
+    if not DATABASE_URL or not psycopg2:
+        return
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS support_tickets (
+                id SERIAL PRIMARY KEY,
+                ticket_id VARCHAR(50) UNIQUE NOT NULL,
+                user_phone VARCHAR(20) NOT NULL,
+                issue_type VARCHAR(100) NOT NULL,
+                target_number VARCHAR(20),
+                description TEXT,
+                status VARCHAR(20) DEFAULT 'OPEN',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("momo-admin: Database verified successfully.")
+    except Exception as e:
+        print(f"momo-admin: Database initialization error: {e}")
+
+init_db()
+
 class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/api/admin/data':
