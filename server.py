@@ -250,6 +250,18 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 cur.execute("SELECT user_phone FROM support_tickets WHERE ticket_id = %s", (ticket_id,))
                 ticket_row = cur.fetchone()
                 
+                # Check if order_id column exists safely
+                provided_order_id = None
+                try:
+                    # using a separate cursor for the safe check
+                    with conn.cursor() as temp_cur:
+                        temp_cur.execute("SELECT order_id FROM support_tickets WHERE ticket_id = %s", (ticket_id,))
+                        temp_row = temp_cur.fetchone()
+                        if temp_row and temp_row[0]:
+                            provided_order_id = temp_row[0]
+                except Exception:
+                    conn.rollback()
+                
                 cur.execute(
                     "UPDATE support_tickets SET status = %s WHERE ticket_id = %s RETURNING id",
                     (new_status, ticket_id)
@@ -260,10 +272,14 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 
                 if updated and new_status == 'REFUNDED' and ticket_row:
                     user_phone = ticket_row[0]
-                    cur.execute(
-                        "SELECT order_id, amount FROM transactions WHERE user_identifier = %s AND status IN ('success', 'PAID') ORDER BY created_at DESC LIMIT 1",
-                        (user_phone,)
-                    )
+                    
+                    if provided_order_id:
+                        cur.execute("SELECT order_id, amount FROM transactions WHERE order_id = %s", (provided_order_id,))
+                    else:
+                        cur.execute(
+                            "SELECT order_id, amount FROM transactions WHERE user_identifier = %s AND status IN ('success', 'PAID') ORDER BY created_at DESC LIMIT 1",
+                            (user_phone,)
+                        )
                     txn = cur.fetchone()
                     if txn:
                         order_id, amount = txn
