@@ -1,7 +1,7 @@
 import http.server
 import socketserver
 import json
-import urllib.parse
+import urllib.request
 import os
 
 try:
@@ -13,6 +13,17 @@ except ImportError:
 PORT = int(os.environ.get('PORT', 8080))
 DATABASE_URL = os.environ.get('DATABASE_URL')
 ADMIN_PASSCODE = os.environ.get('ADMIN_PASSCODE', 'admin123')
+CASHFREE_CLIENT_ID = os.environ.get('CASHFREE_CLIENT_ID')
+CASHFREE_CLIENT_SECRET = os.environ.get('CASHFREE_CLIENT_SECRET')
+
+def get_cashfree_headers():
+    return {
+        "x-api-version": "2023-08-01",
+        "x-client-id": (CASHFREE_CLIENT_ID or "").strip(),
+        "x-client-secret": (CASHFREE_CLIENT_SECRET or "").strip(),
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
 
 def init_db():
     if not DATABASE_URL or not psycopg2:
@@ -235,17 +246,64 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor()
+                
+                cur.execute("SELECT user_phone FROM support_tickets WHERE ticket_id = %s", (ticket_id,))
+                ticket_row = cur.fetchone()
+                
                 cur.execute(
                     "UPDATE support_tickets SET status = %s WHERE ticket_id = %s RETURNING id",
                     (new_status, ticket_id)
                 )
                 updated = cur.fetchone()
+                
+                refund_message = None
+                
+                if updated and new_status == 'REFUNDED' and ticket_row:
+                    user_phone = ticket_row[0]
+                    cur.execute(
+                        "SELECT order_id, amount FROM transactions WHERE user_identifier = %s AND status IN ('success', 'PAID') ORDER BY created_at DESC LIMIT 1",
+                        (user_phone,)
+                    )
+                    txn = cur.fetchone()
+                    if txn:
+                        order_id, amount = txn
+                        if CASHFREE_CLIENT_ID and CASHFREE_CLIENT_SECRET:
+                            try:
+                                cf_url = f"https://sandbox.cashfree.com/pg/orders/{order_id}/refunds"
+                                import os
+                                payload = json.dumps({
+                                    "refund_amount": float(amount),
+                                    "refund_id": f"ref_{ticket_id}_{os.urandom(4).hex()}",
+                                    "refund_note": f"Refund for ticket {ticket_id}"
+                                }).encode('utf-8')
+                                
+                                req = urllib.request.Request(cf_url, data=payload, method="POST")
+                                for k, v in get_cashfree_headers().items():
+                                    req.add_header(k, v)
+                                    
+                                with urllib.request.urlopen(req) as response:
+                                    cf_res = json.loads(response.read().decode('utf-8'))
+                                    refund_status = cf_res.get("refund_status")
+                                    cur.execute("UPDATE transactions SET status = 'REFUNDED' WHERE order_id = %s", (order_id,))
+                                    refund_message = f"Refunded ₹{amount} for order {order_id}. Status: {refund_status}"
+                            except urllib.error.HTTPError as e:
+                                refund_message = f"Cashfree Refund Failed: {e.read().decode('utf-8')}"
+                            except Exception as e:
+                                refund_message = f"Refund Error: {str(e)}"
+                        else:
+                            refund_message = "Cashfree credentials missing, could not refund."
+                    else:
+                        refund_message = "No successful transaction found for this user."
+                        
                 conn.commit()
                 cur.close()
                 conn.close()
                 
                 if updated:
-                    self._send_json(200, {"success": True, "ticket_id": ticket_id, "status": new_status})
+                    res_data = {"success": True, "ticket_id": ticket_id, "status": new_status}
+                    if refund_message:
+                        res_data["refund_message"] = refund_message
+                    self._send_json(200, res_data)
                 else:
                     self._send_json(404, {"success": False, "error": "Ticket not found"})
             except Exception as e:

@@ -152,10 +152,14 @@
 
             <!-- TAB 1: OVERVIEW -->
             <div id="tab-overview" class="tab-content active">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div class="glass-card p-6 rounded-xl text-center">
                         <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Revenue</h3>
                         <div class="text-4xl font-bold text-primary" id="metric-revenue">₹0</div>
+                    </div>
+                    <div class="glass-card p-6 rounded-xl text-center">
+                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Refunded</h3>
+                        <div class="text-4xl font-bold text-red-500" id="metric-refunded">₹0</div>
                     </div>
                     <div class="glass-card p-6 rounded-xl text-center">
                         <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Successful Txns</h3>
@@ -336,6 +340,20 @@
                     const data = await res.json();
                     if (data.success) {
                         setTickets(tickets.map(t => t.ticket_id === ticketId ? { ...t, status: newStatus } : t));
+                        if (data.refund_message) {
+                            alert("Automated Refund:\n" + data.refund_message);
+                            // Refresh the dashboard metrics (like Total Refunded)
+                            const passcode = sessionStorage.getItem('admin-passcode');
+                            if (passcode) {
+                                fetch('/api/admin/data', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ passcode })
+                                })
+                                .then(r => r.json())
+                                .then(d => { if(d.success) renderDashboard(d); });
+                            }
+                        }
                     } else {
                         alert("Failed to update status: " + data.error);
                     }
@@ -516,6 +534,7 @@
                 document.getElementById('admin-assistant-name').value = data.assistant_name;
             }
             let totalRevenue = 0;
+            let totalRefunded = 0;
             let successCount = 0;
             const txBody = document.getElementById('tx-table-body');
             txBody.innerHTML = '';
@@ -524,10 +543,14 @@
                 if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') {
                     totalRevenue += tx.amount;
                     successCount++;
+                } else if (tx.status.toLowerCase() === 'refunded') {
+                    totalRefunded += tx.amount;
                 }
+                
                 let statusClass = 'pending';
                 if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') statusClass = 'success';
                 else if (tx.status.toLowerCase() === 'failed') statusClass = 'failed';
+                else if (tx.status.toLowerCase() === 'refunded') statusClass = 'failed'; // reuse failed class for red
 
                 txBody.innerHTML += `
                     <tr>
@@ -541,6 +564,7 @@
             });
 
             document.getElementById('metric-revenue').innerText = '₹' + totalRevenue.toLocaleString();
+            document.getElementById('metric-refunded').innerText = '₹' + totalRefunded.toLocaleString();
             document.getElementById('metric-tx-count').innerText = successCount;
             document.getElementById('metric-plans-count').innerText = data.purchases.length;
 
