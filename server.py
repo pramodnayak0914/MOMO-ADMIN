@@ -106,10 +106,11 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                             SELECT 
                                 session_id,
                                 MAX(event_data->>'mobile') as contact,
+                                MAX(event_data->>'email') as email,
                                 MAX(created_at) as last_active,
                                 ARRAY_AGG(event_type ORDER BY created_at ASC) as funnel_path
                             FROM analytics_events 
-                            WHERE event_data->>'mobile' IS NOT NULL 
+                            WHERE event_data->>'mobile' IS NOT NULL OR event_data->>'email' IS NOT NULL
                             GROUP BY session_id 
                             ORDER BY last_active DESC 
                             LIMIT 100
@@ -120,6 +121,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                             furthest_stage = lead['funnel_path'][-1] if lead['funnel_path'] else 'Unknown'
                             # Format stage name
                             stage_map = {
+                                'page_view': 'Clicked Link',
                                 'entered_number': 'Entered Number',
                                 'logged_in': 'Verified OTP',
                                 'checkout_started': 'Started Checkout',
@@ -127,6 +129,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                             }
                             leads.append({
                                 'contact': lead['contact'],
+                                'email': lead['email'],
                                 'last_active': str(lead['last_active']),
                                 'stage': stage_map.get(furthest_stage, furthest_stage)
                             })

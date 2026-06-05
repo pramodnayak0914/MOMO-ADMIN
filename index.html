@@ -667,13 +667,19 @@
                         
                         leadsBody.innerHTML += `
                             <tr class="hover:bg-white/5 transition">
-                                <td class="font-bold text-white">${lead.contact}</td>
+                                <td class="font-bold text-white">
+                                    ${lead.contact || 'No Phone'}
+                                    ${lead.email ? `<br><span class="text-xs text-slate-400 font-normal mt-1 block"><i data-lucide="mail" class="w-3 h-3 inline"></i> ${lead.email}</span>` : ''}
+                                </td>
                                 <td class="${stageClass}">${lead.stage}</td>
                                 <td class="text-slate-400 text-sm">${new Date(lead.last_active).toLocaleString()}</td>
                                 <td>
-                                    <a href="https://wa.me/${lead.contact.replace('+','')}" target="_blank" class="px-3 py-1 bg-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/30 border border-[#25D366]/50 rounded text-xs font-bold transition flex items-center gap-1 w-max">
+                                    ${lead.contact ? `<a href="https://wa.me/${lead.contact.replace('+','')}" target="_blank" class="px-3 py-1 bg-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/30 border border-[#25D366]/50 rounded text-xs font-bold transition flex items-center gap-1 w-max mb-1">
                                         <i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp
-                                    </a>
+                                    </a>` : ''}
+                                    ${lead.email ? `<a href="mailto:${lead.email}" target="_blank" class="px-3 py-1 bg-[#00BFFF]/20 text-[#00BFFF] hover:bg-[#00BFFF]/30 border border-[#00BFFF]/50 rounded text-xs font-bold transition flex items-center gap-1 w-max">
+                                        <i data-lucide="mail" class="w-3 h-3"></i> Email
+                                    </a>` : ''}
                                 </td>
                             </tr>
                         `;
