@@ -89,6 +89,38 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                         for row in analytics_raw:
                             if row['event_type'] in analytics_summary:
                                 analytics_summary[row['event_type']] = row['count']
+                                
+                        # Fetch Sales Leads
+                        cur.execute("""
+                            SELECT 
+                                session_id,
+                                MAX(event_data->>'mobile') as contact,
+                                MAX(created_at) as last_active,
+                                ARRAY_AGG(event_type ORDER BY created_at ASC) as funnel_path
+                            FROM analytics_events 
+                            WHERE event_data->>'mobile' IS NOT NULL 
+                            GROUP BY session_id 
+                            ORDER BY last_active DESC 
+                            LIMIT 100
+                        """)
+                        leads_raw = cur.fetchall()
+                        leads = []
+                        for lead in leads_raw:
+                            furthest_stage = lead['funnel_path'][-1] if lead['funnel_path'] else 'Unknown'
+                            # Format stage name
+                            stage_map = {
+                                'entered_number': 'Entered Number',
+                                'logged_in': 'Verified OTP',
+                                'checkout_started': 'Started Checkout',
+                                'purchase_success': 'Purchased'
+                            }
+                            leads.append({
+                                'contact': lead['contact'],
+                                'last_active': str(lead['last_active']),
+                                'stage': stage_map.get(furthest_stage, furthest_stage)
+                            })
+                        analytics_summary['leads'] = leads
+                        
                     except Exception as e:
                         print(f"Error fetching analytics (table might not exist yet): {e}")
                         
