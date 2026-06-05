@@ -300,6 +300,13 @@
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
             const [expandedRow, setExpandedRow] = useState(null);
+            const [toast, setToast] = useState(null);
+            const [confirmDialog, setConfirmDialog] = useState(null);
+
+            const showToast = (message, type = 'success') => {
+                setToast({ message, type });
+                setTimeout(() => setToast(null), 5000);
+            };
 
             const fetchTickets = async () => {
                 setLoading(true);
@@ -307,37 +314,41 @@
                     const res = await fetch('/api/support/tickets');
                     const data = await res.json();
                     if (data.success) {
-                        setTickets(data.tickets);
+                        setTickets(data.tickets || []);
                         setError(null);
                     } else {
-                        setError(data.error || 'Failed to fetch tickets');
+                        setError(data.error || "Failed to load tickets");
                     }
                 } catch (err) {
-                    setError(err.message);
-                } finally {
-                    setLoading(false);
+                    setError("Failed to connect to backend: " + err.message);
                 }
+                setLoading(false);
             };
 
             useEffect(() => {
                 const interval = setInterval(() => {
-                    if (sessionStorage.getItem('admin-passcode')) fetchTickets();
+                    if (sessionStorage.getItem('admin-passcode') && !confirmDialog) fetchTickets();
                 }, 10000);
                 window.addEventListener('admin-unlocked', fetchTickets);
                 return () => {
                     clearInterval(interval);
                     window.removeEventListener('admin-unlocked', fetchTickets);
                 };
-            }, []);
+            }, [confirmDialog]);
 
             const updateStatus = async (ticketId, newStatus) => {
                 if (newStatus === 'REFUNDED') {
-                    const confirmRefund = confirm("Are you sure you want to refund this ticket?\n\nThis will instantly return the money to the customer's bank account and CANNOT be undone!");
-                    if (!confirmRefund) {
-                        fetchTickets(); // reset UI
-                        return;
-                    }
+                    setConfirmDialog({
+                        ticketId,
+                        newStatus,
+                        message: "Are you sure you want to refund this ticket?\n\nThis will instantly return the money to the customer's bank account and CANNOT be undone!"
+                    });
+                    return;
                 }
+                await processStatusUpdate(ticketId, newStatus);
+            };
+
+            const processStatusUpdate = async (ticketId, newStatus) => {
                 try {
                     const res = await fetch(`/api/support/tickets/${ticketId}`, {
                         method: 'PUT',
@@ -348,8 +359,7 @@
                     if (data.success) {
                         setTickets(tickets.map(t => t.ticket_id === ticketId ? { ...t, status: newStatus } : t));
                         if (data.refund_message) {
-                            alert("Automated Refund:\n" + data.refund_message);
-                            // Refresh the dashboard metrics (like Total Refunded)
+                            showToast("Automated Refund:\n" + data.refund_message, 'success');
                             const passcode = sessionStorage.getItem('admin-passcode');
                             if (passcode) {
                                 fetch('/api/admin/data', {
@@ -360,14 +370,16 @@
                                 .then(r => r.json())
                                 .then(d => { if(d.success) renderDashboard(d); });
                             }
+                        } else {
+                            showToast(`Ticket status updated to ${newStatus}`, 'success');
                         }
                     } else {
-                        alert("Failed to update status: " + data.error);
-                        fetchTickets(); // reset UI
+                        showToast("Failed to update status: " + data.error, 'error');
+                        fetchTickets();
                     }
                 } catch (err) {
-                    alert("Error: " + err.message);
-                    fetchTickets(); // reset UI
+                    showToast("Error: " + err.message, 'error');
+                    fetchTickets();
                 }
             };
 
@@ -385,7 +397,49 @@
             if (error) return <div className="text-red-400 p-4 bg-red-900/20 border border-red-900/50 rounded-lg">Error: {error}</div>;
 
             return (
-                <div className="glass-card rounded-xl overflow-hidden">
+                <div className="glass-card rounded-xl overflow-hidden relative" style={{ minHeight: '400px' }}>
+                    {/* Toast Notification */}
+                    {toast && (
+                        <div className={`absolute top-4 right-4 z-50 p-4 rounded-lg shadow-lg border backdrop-blur-md transition-all flex items-start gap-3 max-w-sm ${toast.type === 'error' ? 'bg-red-500/20 border-red-500/50 text-red-100' : 'bg-green-500/20 border-green-500/50 text-green-100'}`}>
+                            <div className="text-sm whitespace-pre-wrap font-medium">{toast.message}</div>
+                            <button onClick={() => setToast(null)} className="ml-auto opacity-70 hover:opacity-100 text-lg leading-none">&times;</button>
+                        </div>
+                    )}
+                    
+                    {/* Confirm Modal */}
+                    {confirmDialog && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                            <div className="bg-[#1a1a24] border border-red-500/30 rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
+                                <div className="p-4 border-b border-white/5 bg-red-500/10 flex items-center gap-3">
+                                    <h3 className="text-red-400 font-bold flex items-center gap-2">⚠️ Confirm Critical Action</h3>
+                                </div>
+                                <div className="p-6">
+                                    <p className="text-slate-300 text-sm whitespace-pre-wrap mb-6 leading-relaxed">
+                                        {confirmDialog.message}
+                                    </p>
+                                    <div className="flex gap-3 justify-end">
+                                        <button 
+                                            onClick={() => { setConfirmDialog(null); fetchTickets(); }}
+                                            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                const { ticketId, newStatus } = confirmDialog;
+                                                setConfirmDialog(null);
+                                                processStatusUpdate(ticketId, newStatus);
+                                            }}
+                                            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                                        >
+                                            Yes, Process Refund
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
                         <h2 className="text-lg font-bold">Support Center</h2>
                         <button onClick={fetchTickets} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition border border-white/10 flex items-center gap-2">
