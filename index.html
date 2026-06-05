@@ -331,6 +331,13 @@
             }, []);
 
             const updateStatus = async (ticketId, newStatus) => {
+                if (newStatus === 'REFUNDED') {
+                    const confirmRefund = confirm("Are you sure you want to refund this ticket?\n\nThis will instantly return the money to the customer's bank account and CANNOT be undone!");
+                    if (!confirmRefund) {
+                        fetchTickets(); // reset UI
+                        return;
+                    }
+                }
                 try {
                     const res = await fetch(`/api/support/tickets/${ticketId}`, {
                         method: 'PUT',
@@ -356,9 +363,11 @@
                         }
                     } else {
                         alert("Failed to update status: " + data.error);
+                        fetchTickets(); // reset UI
                     }
                 } catch (err) {
                     alert("Error: " + err.message);
+                    fetchTickets(); // reset UI
                 }
             };
 
@@ -409,8 +418,9 @@
                                             <td>
                                                 <select 
                                                     value={ticket.status}
+                                                    disabled={ticket.status === 'REFUNDED'}
                                                     onChange={(e) => { e.stopPropagation(); updateStatus(ticket.ticket_id, e.target.value); }}
-                                                    className="bg-black/50 border border-white/10 text-white text-xs rounded-lg p-2 outline-none focus:border-primary"
+                                                    className={`bg-black/50 border border-white/10 text-white text-xs rounded-lg p-2 outline-none ${ticket.status === 'REFUNDED' ? 'opacity-50 cursor-not-allowed' : 'focus:border-primary'}`}
                                                 >
                                                     <option value="OPEN">OPEN</option>
                                                     <option value="IN_PROGRESS">IN PROGRESS</option>

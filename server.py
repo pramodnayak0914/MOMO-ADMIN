@@ -247,8 +247,14 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor()
                 
-                cur.execute("SELECT user_phone FROM support_tickets WHERE ticket_id = %s", (ticket_id,))
+                cur.execute("SELECT user_phone, status FROM support_tickets WHERE ticket_id = %s", (ticket_id,))
                 ticket_row = cur.fetchone()
+                
+                if ticket_row and ticket_row[1] == 'REFUNDED':
+                    self._send_json(400, {"success": False, "error": "Ticket is permanently locked because it has already been REFUNDED."})
+                    cur.close()
+                    conn.close()
+                    return
                 
                 # Check if order_id column exists safely
                 provided_order_id = None
@@ -274,16 +280,18 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     user_phone = ticket_row[0]
                     
                     if provided_order_id:
-                        cur.execute("SELECT order_id, amount FROM transactions WHERE order_id = %s", (provided_order_id,))
+                        cur.execute("SELECT order_id, amount, status FROM transactions WHERE order_id = %s", (provided_order_id,))
                     else:
                         cur.execute(
-                            "SELECT order_id, amount FROM transactions WHERE user_identifier = %s AND status IN ('success', 'PAID') ORDER BY created_at DESC LIMIT 1",
+                            "SELECT order_id, amount, status FROM transactions WHERE user_identifier = %s AND status IN ('success', 'PAID') ORDER BY created_at DESC LIMIT 1",
                             (user_phone,)
                         )
                     txn = cur.fetchone()
                     if txn:
-                        order_id, amount = txn
-                        if CASHFREE_CLIENT_ID and CASHFREE_CLIENT_SECRET:
+                        order_id, amount, txn_status = txn
+                        if txn_status == 'REFUNDED':
+                            refund_message = f"Transaction {order_id} was already refunded previously."
+                        elif CASHFREE_CLIENT_ID and CASHFREE_CLIENT_SECRET:
                             try:
                                 cf_url = f"https://sandbox.cashfree.com/pg/orders/{order_id}/refunds"
                                 import os
