@@ -132,6 +132,70 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+    def do_GET(self):
+        if self.path == '/api/support/tickets':
+            if not DATABASE_URL or not psycopg2:
+                self._send_json(500, {"success": False, "error": "Database not configured"})
+                return
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("SELECT * FROM support_tickets ORDER BY created_at DESC")
+                tickets = cur.fetchall()
+                for ticket in tickets:
+                    if 'created_at' in ticket and ticket['created_at']:
+                        ticket['created_at'] = ticket['created_at'].isoformat()
+                cur.close()
+                conn.close()
+                self._send_json(200, {"success": True, "tickets": tickets})
+            except Exception as e:
+                print(f"Error fetching tickets: {e}")
+                self._send_json(500, {"success": False, "error": str(e)})
+        else:
+            super().do_GET()
+
+    def do_PUT(self):
+        if self.path.startswith('/api/support/tickets/'):
+            ticket_id = self.path.split('/')[-1]
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length == 0:
+                self._send_json(400, {"success": False, "error": "No payload"})
+                return
+            post_data = self.rfile.read(content_length)
+            
+            try:
+                data = json.loads(post_data)
+                new_status = data.get('status')
+                if not new_status:
+                    self._send_json(400, {"success": False, "error": "Status is required"})
+                    return
+                
+                if not DATABASE_URL or not psycopg2:
+                    self._send_json(500, {"success": False, "error": "Database not configured"})
+                    return
+                
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor()
+                cur.execute(
+                    "UPDATE support_tickets SET status = %s WHERE ticket_id = %s RETURNING id",
+                    (new_status, ticket_id)
+                )
+                updated = cur.fetchone()
+                conn.commit()
+                cur.close()
+                conn.close()
+                
+                if updated:
+                    self._send_json(200, {"success": True, "ticket_id": ticket_id, "status": new_status})
+                else:
+                    self._send_json(404, {"success": False, "error": "Ticket not found"})
+            except Exception as e:
+                print(f"Error updating ticket: {e}")
+                self._send_json(500, {"success": False, "error": str(e)})
+        else:
+            self.send_response(404)
+            self.end_headers()
+
     def _send_json(self, status_code, data):
         self.send_response(status_code)
         self.send_header('Content-Type', 'application/json')
