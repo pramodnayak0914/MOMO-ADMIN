@@ -206,14 +206,25 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
     def do_GET(self):
-        if self.path == '/api/support/tickets':
+        from urllib.parse import urlparse, parse_qs
+        parsed_path = urlparse(self.path)
+        
+        if parsed_path.path == '/api/support/tickets':
+            query_params = parse_qs(parsed_path.query)
+            user_phone = query_params.get('user_phone', [None])[0]
+            
             if not DATABASE_URL or not psycopg2:
                 self._send_json(500, {"success": False, "error": "Database not configured"})
                 return
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
-                cur.execute("SELECT * FROM support_tickets ORDER BY created_at DESC")
+                
+                if user_phone:
+                    cur.execute("SELECT * FROM support_tickets WHERE user_phone = %s ORDER BY created_at DESC", (user_phone,))
+                else:
+                    cur.execute("SELECT * FROM support_tickets ORDER BY created_at DESC")
+                    
                 tickets = cur.fetchall()
                 for ticket in tickets:
                     if 'created_at' in ticket and ticket['created_at']:
