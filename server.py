@@ -43,6 +43,49 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                phone_number VARCHAR(20) PRIMARY KEY,
+                wallet_balance DECIMAL(10, 2) DEFAULT 0.00,
+                total_recharges INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS scratch_cards (
+                id SERIAL PRIMARY KEY,
+                user_phone VARCHAR(20) REFERENCES users(phone_number),
+                transaction_id VARCHAR(100) NOT NULL,
+                reward_amount DECIMAL(10, 2) NOT NULL,
+                is_scratched BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS promo_codes (
+                code VARCHAR(50) PRIMARY KEY,
+                discount_type VARCHAR(20) NOT NULL, -- 'flat' or 'percent'
+                value DECIMAL(10, 2) NOT NULL,
+                max_cap DECIMAL(10, 2),
+                usage_limit INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS promo_usage (
+                id SERIAL PRIMARY KEY,
+                user_phone VARCHAR(20) REFERENCES users(phone_number),
+                promo_code VARCHAR(50) REFERENCES promo_codes(code),
+                transaction_id VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        # Insert a default first recharge promo code if not exists
+        cur.execute('''
+            INSERT INTO promo_codes (code, discount_type, value, max_cap, usage_limit)
+            VALUES ('FIRST20', 'flat', 20.00, 20.00, 1)
+            ON CONFLICT DO NOTHING
+        ''')
         conn.commit()
         cur.close()
         conn.close()
