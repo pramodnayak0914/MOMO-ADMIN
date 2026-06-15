@@ -319,14 +319,34 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                         row = cur.fetchone()
                         if row:
                             current_assistant_name = row['value']
+                            
+                        cur.execute("SELECT value FROM app_config WHERE key = 'referral_rules'")
+                        ref_row = cur.fetchone()
+                        referral_rules = json.loads(ref_row['value']) if ref_row else {"referrer_reward": 20, "referred_reward": 20}
+                        
+                        cur.execute("SELECT value FROM app_config WHERE key = 'cashback_rules'")
+                        cb_row = cur.fetchone()
+                        cashback_rules = json.loads(cb_row['value']) if cb_row else {"first_recharge": 0, "weekend": 0}
+                        
+                        cur.execute("SELECT value FROM app_config WHERE key = 'loyalty_rules'")
+                        loy_row = cur.fetchone()
+                        loyalty_rules = json.loads(loy_row['value']) if loy_row else {"silver_min": 0, "gold_min": 500, "platinum_min": 2000}
+                        
+                        growth_rules = {
+                            "referral": referral_rules,
+                            "cashback": cashback_rules,
+                            "loyalty": loyalty_rules
+                        }
                     except Exception as e:
                         print(f"Error fetching config: {e}")
+                        growth_rules = {}
                         
                     cur.close()
                     conn.close()
                 else:
                     transactions = [{"order_id": "TEST", "status": "SUCCESS", "amount": 0, "created_at": "N/A"}]
                     current_assistant_name = "Offline"
+                    growth_rules = {}
                 
                 self._send_json(200, {
                     "success": True,
@@ -337,7 +357,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     "users": users_list,
                     "logins": logins_list,
                     "fraud_alerts": fraud_list,
-                    "marketing_data": marketing_data,
                     "growth_rules": growth_rules,
                     "business_metrics": business_metrics,
                     "marketing_data": marketing_data
