@@ -481,6 +481,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     INSERT INTO app_config (key, value) 
                     VALUES ('assistant_name', %s) 
                     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                ''', (new_name,))
+                conn.commit()
                 cur.close()
                 conn.close()
                 self._send_json(200, {"success": True})
@@ -492,7 +494,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
     def do_GET(self):
-from urllib.parse import urlparse, parse_qs
+        from urllib.parse import urlparse, parse_qs
         parsed_path = urlparse(self.path)
         
         if parsed_path.path == '/api/support/tickets':
@@ -619,6 +621,7 @@ from urllib.parse import urlparse, parse_qs
                         else:
                             refund_message = "Cashfree credentials missing, could not refund."
                     else:
+                        refund_message = "Transaction not found for refund."
                 cur.close()
                 conn.close()
                 
