@@ -181,6 +181,128 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     except Exception as e:
                         print(f"Error fetching analytics (table might not exist yet): {e}")
                         
+                    # Real Postgres Queries
+                    users_list = []
+                    logins_list = []
+                    fraud_list = []
+                    business_metrics = {
+                        "revenue": {"today": 0, "monthly": 0, "total": 0},
+                        "recharge": {"total_count": 0, "success_pct": 0, "failure_pct": 0, "pending_pct": 0},
+                        "users": {"new_today": 0, "active": 0, "returning": 0},
+                        "operators": {"top_operator": "N/A", "top_plan": "N/A", "most_profitable": "N/A"}
+                    }
+                    marketing_data = {
+                        "popular_plan": {"desc": "N/A", "count": 0},
+                        "top_amounts": [],
+                        "operator_share": [],
+                        "acquisition": []
+                    }
+                    try:
+                        cur.execute("SELECT * FROM users ORDER BY created_at DESC LIMIT 100")
+                        for u in cur.fetchall():
+                            d = dict(u)
+                            d['created_at'] = str(d['created_at'])
+                            d['wallet_balance'] = float(d.get('wallet_balance', 0))
+                            users_list.append(d)
+                            
+                        # If tables don't exist yet, we will catch errors gracefully later
+                        try:
+                            cur.execute("SELECT * FROM login_history ORDER BY created_at DESC LIMIT 100")
+                            for l in cur.fetchall():
+                                d = dict(l)
+                                d['created_at'] = str(d['created_at'])
+                                logins_list.append(d)
+                        except Exception:
+                            conn.rollback()
+                            
+                        try:
+                            cur.execute("SELECT * FROM fraud_alerts ORDER BY created_at DESC LIMIT 100")
+                            for f in cur.fetchall():
+                                d = dict(f)
+                                d['created_at'] = str(d['created_at'])
+                                fraud_list.append(d)
+                        except Exception:
+                            conn.rollback()
+
+                        # Business Metrics
+                        try:
+                            cur.execute("SELECT SUM(amount) as s FROM transactions WHERE LOWER(status) IN ('success', 'paid') AND DATE(created_at) = CURRENT_DATE")
+                            row = cur.fetchone()
+                            if row and row.get('s'): business_metrics['revenue']['today'] = float(row['s'])
+                            
+                            cur.execute("SELECT SUM(amount) as s FROM transactions WHERE LOWER(status) IN ('success', 'paid') AND TO_CHAR(created_at, 'YYYY-MM') = TO_CHAR(CURRENT_DATE, 'YYYY-MM')")
+                            row = cur.fetchone()
+                            if row and row.get('s'): business_metrics['revenue']['monthly'] = float(row['s'])
+                            
+                            cur.execute("SELECT SUM(amount) as s FROM transactions WHERE LOWER(status) IN ('success', 'paid')")
+                            row = cur.fetchone()
+                            if row and row.get('s'): business_metrics['revenue']['total'] = float(row['s'])
+                            
+                            cur.execute("SELECT COUNT(*) as c FROM transactions")
+                            row = cur.fetchone()
+                            total_tx = int(row['c']) if row and row.get('c') else 0
+                            business_metrics['recharge']['total_count'] = total_tx
+                            if total_tx > 0:
+                                cur.execute("SELECT LOWER(status) as st, COUNT(*) as c FROM transactions GROUP BY LOWER(status)")
+                                status_counts = {dict(r)['st']: int(dict(r)['c']) for r in cur.fetchall()}
+                                success_c = status_counts.get('success', 0) + status_counts.get('paid', 0)
+                                fail_c = status_counts.get('failed', 0) + status_counts.get('refunded', 0)
+                                pending_c = total_tx - success_c - fail_c
+                                business_metrics['recharge']['success_pct'] = round((success_c / total_tx) * 100, 1)
+                                business_metrics['recharge']['failure_pct'] = round((fail_c / total_tx) * 100, 1)
+                                business_metrics['recharge']['pending_pct'] = round((pending_c / total_tx) * 100, 1)
+                                
+                            cur.execute("SELECT COUNT(*) as c FROM users WHERE DATE(created_at) = CURRENT_DATE")
+                            row = cur.fetchone()
+                            if row and row.get('c'): business_metrics['users']['new_today'] = int(row['c'])
+                            
+                            cur.execute("SELECT COUNT(*) as c FROM users")
+                            row = cur.fetchone()
+                            if row and row.get('c'): business_metrics['users']['active'] = int(row['c'])
+                            
+                            cur.execute("SELECT COUNT(*) as c FROM (SELECT user_identifier FROM transactions WHERE LOWER(status) IN ('success', 'paid') GROUP BY user_identifier HAVING COUNT(*) > 1) AS rep")
+                            row = cur.fetchone()
+                            if row and row.get('c'): business_metrics['users']['returning'] = int(row['c'])
+                            
+                            cur.execute("SELECT brand_name, COUNT(*) as c FROM purchases GROUP BY brand_name ORDER BY c DESC LIMIT 1")
+                            row = cur.fetchone()
+                            if row and row.get('brand_name'): business_metrics['operators']['top_operator'] = row['brand_name']
+                            
+                            cur.execute("SELECT flow_type, COUNT(*) as c FROM purchases GROUP BY flow_type ORDER BY c DESC LIMIT 1")
+                            row = cur.fetchone()
+                            if row and row.get('flow_type'): business_metrics['operators']['top_plan'] = row['flow_type']
+                            
+                            cur.execute("SELECT brand_name, SUM(CAST(plan_details->>'price' AS DECIMAL)) as rev FROM purchases GROUP BY brand_name ORDER BY rev DESC LIMIT 1")
+                            row = cur.fetchone()
+                            if row and row.get('brand_name'): business_metrics['operators']['most_profitable'] = row['brand_name']
+                        except Exception as e:
+                            print(f"Error fetching business metrics: {e}")
+                            conn.rollback()
+
+                        # Marketing Data
+                        try:
+                            cur.execute("SELECT plan_details->>'desc' as desc, COUNT(*) as c FROM purchases GROUP BY plan_details->>'desc' ORDER BY c DESC LIMIT 1")
+                            row = cur.fetchone()
+                            if row and row.get('desc'):
+                                marketing_data['popular_plan'] = {"desc": row['desc'], "count": int(row['c'])}
+                                
+                            cur.execute("SELECT amount, COUNT(*) as count FROM transactions GROUP BY amount ORDER BY count DESC LIMIT 5")
+                            marketing_data['top_amounts'] = [{"amount": float(r['amount']), "count": int(r['count'])} for r in cur.fetchall()]
+                            
+                            cur.execute("SELECT brand_name as operator, COUNT(*) as count FROM purchases GROUP BY brand_name ORDER BY count DESC LIMIT 5")
+                            marketing_data['operator_share'] = [{"operator": r['operator'], "count": int(r['count'])} for r in cur.fetchall()]
+                            
+                            cur.execute("SELECT event_type as source, COUNT(*) as count FROM analytics_events GROUP BY event_type ORDER BY count DESC LIMIT 4")
+                            marketing_data['acquisition'] = [{"source": r['source'], "count": int(r['count'])} for r in cur.fetchall()]
+                        except Exception as e:
+                            print(f"Error fetching marketing data: {e}")
+                            conn.rollback()
+
+                    except Exception as e:
+                        print(f"Postgres error: {e}")
+                        conn.rollback()
+
+
                     current_assistant_name = ""
                     try:
                         cur.execute("SELECT value FROM app_config WHERE key = 'assistant_name'")
@@ -202,30 +324,49 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     "purchases": purchases,
                     "analytics": analytics_summary,
                     "assistant_name": current_assistant_name,
-                    "users": [{"mobile": "Demo User", "status": "ACTIVE"}],
-                    "logins": [],
-                    "fraud_alerts": [],
-                    "business_metrics": {
-                        "revenue": {"today": 0, "monthly": 0, "total": 0},
-                        "recharge": {"total_count": 0, "success_pct": 0, "failure_pct": 0, "pending_pct": 0},
-                        "users": {"new_today": 0, "active": 0, "returning": 0},
-                        "operators": {"top_operator": "N/A", "top_plan": "N/A", "most_profitable": "N/A"}
-                    },
-                    "marketing_data": {
-                        "popular_plan": {"desc": "N/A", "count": 0},
-                        "top_amounts": [],
-                        "operator_share": [],
-                        "acquisition": []
-                    }
+                    "users": users_list,
+                    "logins": logins_list,
+                    "fraud_alerts": fraud_list,
+                    "business_metrics": business_metrics,
+                    "marketing_data": marketing_data
                 })
             except Exception as e:
                 print(f"Error fetching admin data: {e}")
                 self._send_json(500, {"success": False, "error": str(e)})
         elif self.path == '/api/admin/users/action':
-            self._send_json(200, {"success": True})
+            content_length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(content_length))
+            if data.get('passcode') != ADMIN_PASSCODE: return self._send_json(401, {"error": "Unauthorized"})
+            action = data.get('action')
+            phone = data.get('phone_number')
+            try:
+                if DATABASE_URL and psycopg2:
+                    conn = psycopg2.connect(DATABASE_URL)
+                    cur = conn.cursor()
+                    status = 'SUSPENDED' if action == 'suspend' else 'ACTIVE'
+                    cur.execute("UPDATE users SET status = %s WHERE phone_number = %s", (status, phone))
+                    conn.commit()
+                    conn.close()
+                self._send_json(200, {"success": True})
+            except Exception as e:
+                self._send_json(500, {"error": str(e)})
             return
+            
         elif self.path == '/api/admin/recharges/retry':
-            self._send_json(200, {"success": True})
+            content_length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(content_length))
+            if data.get('passcode') != ADMIN_PASSCODE: return self._send_json(401, {"error": "Unauthorized"})
+            order_id = data.get('order_id')
+            try:
+                if DATABASE_URL and psycopg2:
+                    conn = psycopg2.connect(DATABASE_URL)
+                    cur = conn.cursor()
+                    cur.execute("UPDATE transactions SET status = 'PENDING' WHERE order_id = %s", (order_id,))
+                    conn.commit()
+                    conn.close()
+                self._send_json(200, {"success": True})
+            except Exception as e:
+                self._send_json(500, {"error": str(e)})
             return
         elif self.path == '/api/admin/config':
             content_length = int(self.headers.get('Content-Length', 0))
