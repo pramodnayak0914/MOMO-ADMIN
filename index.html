@@ -232,6 +232,7 @@
                     renderDashboard(data);
                     loadTickets();
                 } else {
+                    document.getElementById('login-error').innerText = "Error: " + (data.error || "Invalid Passcode");
                     document.getElementById('login-error').style.display = 'block';
                 }
             })

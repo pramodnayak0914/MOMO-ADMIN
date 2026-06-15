@@ -120,24 +120,46 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     'purchase_success': 0
                 }
                 
+                users_list = []
+                logins_list = []
+                fraud_list = []
+                business_metrics = {
+                    "revenue": {"today": 0, "monthly": 0, "total": 0},
+                    "recharge": {"total_count": 0, "success_pct": 0, "failure_pct": 0, "pending_pct": 0},
+                    "users": {"new_today": 0, "active": 0, "returning": 0},
+                    "operators": {"top_operator": "N/A", "top_plan": "N/A", "most_profitable": "N/A"}
+                }
+                marketing_data = {
+                    "popular_plan": {"desc": "N/A", "count": 0},
+                    "top_amounts": [],
+                    "operator_share": [],
+                    "acquisition": []
+                }
+                
                 if DATABASE_URL and psycopg2:
-                    conn = psycopg2.connect(DATABASE_URL)
-                    cur = conn.cursor(cursor_factory=RealDictCursor)
-                    
-                    cur.execute("SELECT * FROM transactions ORDER BY created_at DESC LIMIT 500")
-                    transactions_raw = cur.fetchall()
-                    for t in transactions_raw:
-                        t['created_at'] = str(t['created_at'])
-                        t['amount'] = float(t['amount'])
-                        transactions.append(dict(t))
+                    try:
+                        conn = psycopg2.connect(DATABASE_URL)
+                        cur = conn.cursor(cursor_factory=RealDictCursor)
                         
-                    cur.execute("SELECT * FROM purchases ORDER BY created_at DESC LIMIT 500")
-                    purchases_raw = cur.fetchall()
-                    for p in purchases_raw:
-                        p['created_at'] = str(p['created_at'])
-                        purchases.append(dict(p))
+                        cur.execute("SELECT * FROM transactions ORDER BY created_at DESC LIMIT 500")
+                        transactions_raw = cur.fetchall()
+                        for t in transactions_raw:
+                            t['created_at'] = str(t['created_at'])
+                            t['amount'] = float(t['amount'] or 0)
+                            transactions.append(dict(t))
+                            
+                        cur.execute("SELECT * FROM purchases ORDER BY created_at DESC LIMIT 500")
+                        purchases_raw = cur.fetchall()
+                        for p in purchases_raw:
+                            p['created_at'] = str(p['created_at'])
+                            purchases.append(dict(p))
+                    except Exception as e:
+                        print(f"Error fetching transactions/purchases: {e}")
                         
                     try:
+                        if 'conn' not in locals() or conn.closed:
+                            conn = psycopg2.connect(DATABASE_URL)
+                        cur = conn.cursor(cursor_factory=RealDictCursor)
                         cur.execute("SELECT event_type, COUNT(DISTINCT session_id) as count FROM analytics_events GROUP BY event_type")
                         analytics_raw = cur.fetchall()
                         for row in analytics_raw:
@@ -182,27 +204,15 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                         print(f"Error fetching analytics (table might not exist yet): {e}")
                         
                     # Real Postgres Queries
-                    users_list = []
-                    logins_list = []
-                    fraud_list = []
-                    business_metrics = {
-                        "revenue": {"today": 0, "monthly": 0, "total": 0},
-                        "recharge": {"total_count": 0, "success_pct": 0, "failure_pct": 0, "pending_pct": 0},
-                        "users": {"new_today": 0, "active": 0, "returning": 0},
-                        "operators": {"top_operator": "N/A", "top_plan": "N/A", "most_profitable": "N/A"}
-                    }
-                    marketing_data = {
-                        "popular_plan": {"desc": "N/A", "count": 0},
-                        "top_amounts": [],
-                        "operator_share": [],
-                        "acquisition": []
-                    }
                     try:
+                        if 'conn' not in locals() or conn.closed:
+                            conn = psycopg2.connect(DATABASE_URL)
+                        cur = conn.cursor(cursor_factory=RealDictCursor)
                         cur.execute("SELECT * FROM users ORDER BY created_at DESC LIMIT 100")
                         for u in cur.fetchall():
                             d = dict(u)
                             d['created_at'] = str(d['created_at'])
-                            d['wallet_balance'] = float(d.get('wallet_balance', 0))
+                            d['wallet_balance'] = float(d.get('wallet_balance') or 0)
                             users_list.append(d)
                             
                         # If tables don't exist yet, we will catch errors gracefully later
