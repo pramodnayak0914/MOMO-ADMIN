@@ -574,6 +574,9 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
     def do_GET(self):
+        if self.path == '/superadmin':
+            self.path = '/superadmin.html'
+            
         from urllib.parse import urlparse, parse_qs
         parsed_path = urlparse(self.path)
         
