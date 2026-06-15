@@ -3,218 +3,564 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MOMO-AI Admin Portal</title>
+    <title>OnlineRecharge-AI Admin</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
+    <!-- React & Tailwind dependencies -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0a0f19',
+                        surface: '#121826',
+                        'surface-light': '#1e2536',
+                        primary: '#ff3366',
+                        accent: '#00d8f6',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* Add minimal styling for navigation tabs */
-        .top-nav {
+        .sidebar-item {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 1rem;
-            overflow-x: auto;
-        }
-        .nav-btn {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 0.5rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: var(--font-main);
-            font-weight: 600;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            color: #94a3b8;
             transition: all 0.2s;
-            white-space: nowrap;
+            cursor: pointer;
         }
-        .nav-btn:hover {
+        .sidebar-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
             color: white;
-            border-color: rgba(255,255,255,0.3);
         }
-        .nav-btn.active {
-            background: rgba(255, 51, 102, 0.1);
+        .sidebar-item.active {
+            background-color: rgba(255, 51, 102, 0.1);
             color: var(--primary-color);
-            border-color: var(--primary-color);
+            font-weight: 600;
         }
-        .tab-section {
+        .tab-content {
             display: none;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.3s ease-in-out;
         }
-        .tab-section.active {
+        .tab-content.active {
             display: block;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Support Ticket React Table Overrides */
+        .react-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .react-table th {
+            text-align: left;
+            padding: 1rem;
+            color: #94a3b8;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.2);
+        }
+        .react-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            color: #e2e8f0;
+        }
+        .react-table tr:hover {
+            background-color: rgba(255,255,255,0.02);
         }
     </style>
 </head>
-<body>
-    <div id="login-overlay">
-        <div class="login-box glass-card">
-            <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">Admin Access</h2>
-            <input type="password" id="admin-passcode" placeholder="Enter Passcode" style="width: 100%; margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;" onkeypress="if(event.key==='Enter') document.getElementById('login-btn').click();">
-            <button id="login-btn" class="primary-glow-btn full-width">Unlock Dashboard</button>
-            <p id="login-error" style="color: #ff4757; margin-top: 1rem; display: none;">Invalid Passcode</p>
+<body class="bg-dark text-slate-100 font-['Plus_Jakarta_Sans'] min-h-screen overflow-hidden">
+    
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-dark">
+        <div class="glass-card w-full max-w-md p-8 rounded-2xl text-center">
+            <div class="w-16 h-16 mx-auto bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center mb-6">
+                <i data-lucide="shield" class="w-8 h-8 text-white"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-6 text-white">Admin Access</h2>
+            <input type="password" id="admin-passcode" placeholder="Enter Passcode" class="w-full mb-6 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition">
+            <button id="login-btn" class="primary-glow-btn full-width py-4 rounded-xl">Unlock Dashboard</button>
+            <p id="login-error" class="text-red-500 mt-4 hidden">Invalid Passcode</p>
         </div>
     </div>
 
-    <div class="admin-layout hidden" id="dashboard-content">
-        <div class="admin-header" style="margin-bottom: 1rem; border-bottom: none;">
-            <div>
-                <h1 style="color: var(--text-light);">MOMO-AI Admin</h1>
-                <p style="color: var(--text-muted);">Real-time metrics and configurations.</p>
-            </div>
-            <button class="primary-glow-btn" id="logout-btn" style="padding: 0.5rem 1rem;">Lock</button>
-        </div>
-
-        <nav class="top-nav">
-            <button class="nav-btn active" data-target="tab-overview">Overview</button>
-            <button class="nav-btn" data-target="tab-analytics">Business Analytics</button>
-            <button class="nav-btn" data-target="tab-support">Support Tickets</button>
-        </nav>
-
-        <!-- TAB: OVERVIEW -->
-        <div id="tab-overview" class="tab-section active">
-            <div class="admin-metrics">
-                <div class="metric-card">
-                    <h3>Total Revenue</h3>
-                    <div class="value" id="metric-revenue">₹0</div>
+    <!-- Main App Layout -->
+    <div id="dashboard-content" class="hidden flex h-screen w-full">
+        
+        <!-- Left Sidebar -->
+        <aside class="w-64 bg-surface border-r border-white/10 flex flex-col">
+            <div class="p-6 border-b border-white/10 flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                    <i data-lucide="zap" class="w-4 h-4 text-white"></i>
                 </div>
-                <div class="metric-card">
-                    <h3>Total Successful Transactions</h3>
-                    <div class="value" id="metric-tx-count">0</div>
-                </div>
-                <div class="metric-card">
-                    <h3>Active Plans Sold</h3>
-                    <div class="value" id="metric-plans-count">0</div>
-                </div>
-            </div>
-
-            <h2 style="margin-bottom: 1rem; color: var(--text-light);">Recent Transactions</h2>
-            <div style="overflow-x: auto;">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>User Identifier</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tx-table-body">
-                        <!-- Rows injected via JS -->
-                    </tbody>
-                </table>
+                <span class="font-bold text-lg tracking-tight">Admin Portal</span>
             </div>
             
-            <h2 style="margin-top: 3rem; margin-bottom: 1rem; color: var(--text-light);">Recent Plan Activations</h2>
-            <div style="overflow-x: auto;">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Target Account</th>
-                            <th>Brand</th>
-                            <th>Plan Type</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="purchases-table-body">
-                        <!-- Rows injected via JS -->
-                    </tbody>
-                </table>
+            <nav class="flex-1 p-4 space-y-2">
+                <div class="sidebar-item active" data-tab="tab-overview">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Overview</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-analytics">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                    <span>Analytics Funnel</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-support">
+                    <i data-lucide="headphones" class="w-5 h-5"></i>
+                    <span>Support Tickets</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-settings">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Global Settings</span>
+                </div>
+            </nav>
+            
+            <div class="p-4 border-t border-white/10">
+                <div id="logout-btn" class="sidebar-item text-red-400 hover:text-red-300 hover:bg-red-500/10">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                    <span>Lock Dashboard</span>
+                </div>
             </div>
-        </div>
+        </aside>
 
-        <!-- TAB: BUSINESS ANALYTICS & MARKETING -->
-        <div id="tab-analytics" class="tab-section">
-            <div class="admin-metrics" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
-                <div class="metric-card">
-                    <h3>Total Visitors</h3>
-                    <div class="value" id="funnel-visits" style="color: white; font-size: 2rem;">0</div>
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto bg-dark p-8">
+            <header class="flex justify-between items-center mb-8 pb-4 border-b border-white/10">
+                <h1 id="page-title" class="text-2xl font-bold">Dashboard Overview</h1>
+                <div class="flex items-center gap-4">
+                    <span class="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/50 rounded-full text-xs font-bold flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                        LIVE
+                    </span>
                 </div>
-                <div class="metric-card">
-                    <h3>Entered Number</h3>
-                    <div class="value" id="funnel-entered" style="color: white; font-size: 2rem;">0</div>
+            </header>
+
+            <!-- TAB 1: OVERVIEW -->
+            <div id="tab-overview" class="tab-content active">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-xl text-center">
+                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Revenue</h3>
+                        <div class="text-4xl font-bold text-primary" id="metric-revenue">₹0</div>
+                    </div>
+                    <div class="glass-card p-6 rounded-xl text-center">
+                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Refunded</h3>
+                        <div class="text-4xl font-bold text-red-500" id="metric-refunded">₹0</div>
+                    </div>
+                    <div class="glass-card p-6 rounded-xl text-center">
+                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Successful Txns</h3>
+                        <div class="text-4xl font-bold text-white" id="metric-tx-count">0</div>
+                    </div>
+                    <div class="glass-card p-6 rounded-xl text-center">
+                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Active Plans Sold</h3>
+                        <div class="text-4xl font-bold text-accent" id="metric-plans-count">0</div>
+                    </div>
                 </div>
-                <div class="metric-card">
-                    <h3>Verified OTP</h3>
-                    <div class="value" id="funnel-logged" style="color: white; font-size: 2rem;">0</div>
-                </div>
-                <div class="metric-card">
-                    <h3>Checkout Started</h3>
-                    <div class="value" id="funnel-checkout" style="color: white; font-size: 2rem;">0</div>
-                </div>
-                <div class="metric-card" style="border-color: var(--primary-color);">
-                    <h3 style="color: var(--primary-color);">Purchased</h3>
-                    <div class="value" id="funnel-purchased" style="font-size: 2rem;">0</div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <div class="glass-card rounded-xl overflow-hidden">
+                        <div class="p-6 border-b border-white/5 flex justify-between items-center">
+                            <h2 class="text-lg font-bold">Recent Transactions</h2>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>User Identifier</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tx-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-xl overflow-hidden">
+                        <div class="p-6 border-b border-white/5">
+                            <h2 class="text-lg font-bold">Recent Plan Activations</h2>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Target Account</th>
+                                        <th>Brand</th>
+                                        <th>Plan Type</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="purchases-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <h2 style="margin-top: 3rem; margin-bottom: 1rem; color: var(--text-light);">Sales Leads (Funnel Drop-offs)</h2>
-            <p style="color: var(--text-muted); margin-bottom: 1rem;">Contacts captured from visitors who abandoned checkout.</p>
-            <div style="overflow-x: auto;">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Phone / Email</th>
-                            <th>Furthest Stage Reached</th>
-                            <th>Last Active</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leads-table-body">
-                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Loading leads...</td></tr>
-                    </tbody>
-                </table>
+            <!-- TAB 2: ANALYTICS -->
+            <div id="tab-analytics" class="tab-content">
+                <div class="glass-card rounded-xl p-8 mb-8">
+                    <h2 class="text-xl font-bold mb-8">Conversion Funnel</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
+                            <h4 class="text-slate-400 text-sm mb-2">Total Visitors</h4>
+                            <div id="funnel-visits" class="text-3xl font-bold text-white">0</div>
+                        </div>
+                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
+                            <h4 class="text-slate-400 text-sm mb-2">Entered Number</h4>
+                            <div id="funnel-entered" class="text-3xl font-bold text-white">0</div>
+                        </div>
+                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
+                            <h4 class="text-slate-400 text-sm mb-2">Verified OTP</h4>
+                            <div id="funnel-logged" class="text-3xl font-bold text-white">0</div>
+                        </div>
+                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
+                            <h4 class="text-slate-400 text-sm mb-2">Checkout Started</h4>
+                            <div id="funnel-checkout" class="text-3xl font-bold text-white">0</div>
+                        </div>
+                        <div class="bg-primary/10 p-6 rounded-xl border border-primary/30">
+                            <h4 class="text-primary text-sm mb-2 font-bold">Purchased</h4>
+                            <div id="funnel-purchased" class="text-3xl font-bold text-primary">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-card rounded-xl overflow-hidden mt-8">
+                    <div class="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
+                        <h2 class="text-lg font-bold">Sales Leads (Funnel Drop-offs)</h2>
+                        <span class="text-sm text-slate-400">Contacts captured from visitors</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="data-table w-full">
+                            <thead>
+                                <tr>
+                                    <th>Phone / Email</th>
+                                    <th>Furthest Stage Reached</th>
+                                    <th>Last Active</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leads-table-body">
+                                <tr><td colspan="4" class="text-center py-8 text-slate-500">Loading leads...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- TAB: SUPPORT TICKETS -->
-        <div id="tab-support" class="tab-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h2 style="color: var(--text-light); margin: 0;">Support Center</h2>
-                <button id="refresh-tickets-btn" class="nav-btn" style="padding: 0.25rem 1rem;">Refresh</button>
+            <!-- TAB 3: SUPPORT -->
+            <div id="tab-support" class="tab-content">
+                <div id="react-tickets-root"></div>
             </div>
-            <div style="overflow-x: auto;">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Ticket ID</th>
-                            <th>Status</th>
-                            <th>User Phone</th>
-                            <th>Issue Type</th>
-                            <th>Target Number</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tickets-table-body">
-                        <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading tickets...</td></tr>
-                    </tbody>
-                </table>
+
+            <!-- TAB 4: SETTINGS -->
+            <div id="tab-settings" class="tab-content">
+                <div class="glass-card rounded-xl p-8 max-w-2xl">
+                    <h2 class="text-xl font-bold mb-6">AI Assistant Configuration</h2>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-slate-400 mb-2">🤖 Assistant Name</label>
+                        <p class="text-slate-500 text-sm mb-4">This name will be updated instantly on the public website for all users.</p>
+                        <div class="flex gap-4">
+                            <input type="text" id="admin-assistant-name" placeholder="e.g. OnlineRecharge" class="flex-1 p-3 rounded-lg border border-white/20 bg-black/50 text-white outline-none focus:border-primary">
+                            <button id="save-assistant-name" class="primary-glow-btn px-6 py-3">Save Changes</button>
+                        </div>
+                        <p id="save-settings-msg" class="text-green-400 mt-3 text-sm hidden flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i> Successfully updated!
+                        </p>
+                    </div>
+                </div>
             </div>
-        </div>
+
+        </main>
     </div>
 
-    <script>
-        // Tab Navigation Logic
-        const navBtns = document.querySelectorAll('.nav-btn[data-target]');
-        const tabSections = document.querySelectorAll('.tab-section');
+    <!-- React Tickets Component -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-        navBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                navBtns.forEach(b => b.classList.remove('active'));
-                tabSections.forEach(s => s.classList.remove('active'));
+        function TicketDashboard() {
+            const [tickets, setTickets] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [expandedRow, setExpandedRow] = useState(null);
+            const [toast, setToast] = useState(null);
+            const [confirmDialog, setConfirmDialog] = useState(null);
+
+            const showToast = (message, type = 'success') => {
+                setToast({ message, type });
+                setTimeout(() => setToast(null), 5000);
+            };
+
+            const fetchTickets = async () => {
+                setLoading(true);
+                try {
+                    const res = await fetch('/api/support/tickets');
+                    const data = await res.json();
+                    if (data.success) {
+                        setTickets(data.tickets || []);
+                        setError(null);
+                    } else {
+                        setError(data.error || "Failed to load tickets");
+                    }
+                } catch (err) {
+                    setError("Failed to connect to backend: " + err.message);
+                }
+                setLoading(false);
+            };
+
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    if (sessionStorage.getItem('admin-passcode') && !confirmDialog) fetchTickets();
+                }, 10000);
+                window.addEventListener('admin-unlocked', fetchTickets);
+                return () => {
+                    clearInterval(interval);
+                    window.removeEventListener('admin-unlocked', fetchTickets);
+                };
+            }, [confirmDialog]);
+
+            const updateStatus = async (ticketId, newStatus) => {
+                if (newStatus === 'REFUNDED') {
+                    setConfirmDialog({
+                        ticketId,
+                        newStatus,
+                        message: "Are you sure you want to refund this ticket?\n\nThis will instantly return the money to the customer's bank account and CANNOT be undone!"
+                    });
+                    return;
+                }
+                await processStatusUpdate(ticketId, newStatus);
+            };
+
+            const processStatusUpdate = async (ticketId, newStatus) => {
+                try {
+                    const res = await fetch(`/api/support/tickets/${ticketId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        setTickets(tickets.map(t => t.ticket_id === ticketId ? { ...t, status: newStatus } : t));
+                        if (data.refund_message) {
+                            showToast("Automated Refund:\n" + data.refund_message, 'success');
+                            const passcode = sessionStorage.getItem('admin-passcode');
+                            if (passcode) {
+                                fetch('/api/admin/data', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ passcode })
+                                })
+                                .then(r => r.json())
+                                .then(d => { if(d.success) renderDashboard(d); });
+                            }
+                        } else {
+                            showToast(`Ticket status updated to ${newStatus}`, 'success');
+                        }
+                    } else {
+                        showToast("Failed to update status: " + data.error, 'error');
+                        fetchTickets();
+                    }
+                } catch (err) {
+                    showToast("Error: " + err.message, 'error');
+                    fetchTickets();
+                }
+            };
+
+            const getStatusBadge = (status) => {
+                const base = "px-3 py-1 rounded-full text-xs font-bold border ";
+                switch(status) {
+                    case 'OPEN': return base + 'bg-red-500/20 text-red-400 border-red-500/50';
+                    case 'IN_PROGRESS': return base + 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+                    case 'RESOLVED': return base + 'bg-green-500/20 text-green-400 border-green-500/50';
+                    case 'REFUNDED': return base + 'bg-blue-500/20 text-blue-400 border-blue-500/50';
+                    default: return base + 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+                }
+            };
+
+            if (error) return <div className="text-red-400 p-4 bg-red-900/20 border border-red-900/50 rounded-lg">Error: {error}</div>;
+
+            return (
+                <div className="glass-card rounded-xl overflow-hidden relative" style={{ minHeight: '400px' }}>
+                    {/* Toast Notification */}
+                    {toast && (
+                        <div className={`absolute top-4 right-4 z-50 p-4 rounded-lg shadow-lg border backdrop-blur-md transition-all flex items-start gap-3 max-w-sm ${toast.type === 'error' ? 'bg-red-500/20 border-red-500/50 text-red-100' : 'bg-green-500/20 border-green-500/50 text-green-100'}`}>
+                            <div className="text-sm whitespace-pre-wrap font-medium">{toast.message}</div>
+                            <button onClick={() => setToast(null)} className="ml-auto opacity-70 hover:opacity-100 text-lg leading-none">&times;</button>
+                        </div>
+                    )}
+                    
+                    {/* Confirm Modal */}
+                    {confirmDialog && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                            <div className="bg-[#1a1a24] border border-red-500/30 rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
+                                <div className="p-4 border-b border-white/5 bg-red-500/10 flex items-center gap-3">
+                                    <h3 className="text-red-400 font-bold flex items-center gap-2">⚠️ Confirm Critical Action</h3>
+                                </div>
+                                <div className="p-6">
+                                    <p className="text-slate-300 text-sm whitespace-pre-wrap mb-6 leading-relaxed">
+                                        {confirmDialog.message}
+                                    </p>
+                                    <div className="flex gap-3 justify-end">
+                                        <button 
+                                            onClick={() => { setConfirmDialog(null); fetchTickets(); }}
+                                            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                const { ticketId, newStatus } = confirmDialog;
+                                                setConfirmDialog(null);
+                                                processStatusUpdate(ticketId, newStatus);
+                                            }}
+                                            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                                        >
+                                            Yes, Process Refund
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
+                        <h2 className="text-lg font-bold">Support Center</h2>
+                        <button onClick={fetchTickets} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition border border-white/10 flex items-center gap-2">
+                            <i data-lucide="refresh-cw" className="w-4 h-4"></i>
+                            Refresh Data
+                        </button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="react-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticket ID</th>
+                                    <th>Status</th>
+                                    <th>User Phone</th>
+                                    <th>Issue Type</th>
+                                    <th>Target Number</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading && tickets.length === 0 ? (
+                                    <tr><td colSpan="6" className="text-center py-8 text-slate-500">Loading tickets...</td></tr>
+                                ) : tickets.length === 0 ? (
+                                    <tr><td colSpan="6" className="text-center py-8 text-slate-500">No tickets found in database.</td></tr>
+                                ) : tickets.map(ticket => (
+                                    <React.Fragment key={ticket.id}>
+                                        <tr className="cursor-pointer hover:bg-white/5 transition" onClick={() => setExpandedRow(expandedRow === ticket.id ? null : ticket.id)}>
+                                            <td className="font-semibold">{ticket.ticket_id}</td>
+                                            <td>
+                                                <select 
+                                                    value={ticket.status}
+                                                    disabled={ticket.status === 'REFUNDED'}
+                                                    onChange={(e) => { e.stopPropagation(); updateStatus(ticket.ticket_id, e.target.value); }}
+                                                    className={`bg-black/50 border border-white/10 text-white text-xs rounded-lg p-2 outline-none ${ticket.status === 'REFUNDED' ? 'opacity-50 cursor-not-allowed' : 'focus:border-primary'}`}
+                                                >
+                                                    <option value="OPEN">OPEN</option>
+                                                    <option value="IN_PROGRESS">IN PROGRESS</option>
+                                                    <option value="RESOLVED">RESOLVED</option>
+                                                    <option value="REFUNDED">REFUNDED</option>
+                                                </select>
+                                            </td>
+                                            <td>{ticket.user_phone}</td>
+                                            <td className="text-accent">{ticket.issue_type}</td>
+                                            <td>{ticket.target_number || 'N/A'}</td>
+                                            <td>
+                                                <button className="text-primary hover:text-white transition text-sm flex items-center gap-1">
+                                                    {expandedRow === ticket.id ? 'Hide Details' : 'View Details'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {expandedRow === ticket.id && (
+                                            <tr className="bg-black/20">
+                                                <td colSpan="6" className="p-6">
+                                                    <div className="grid grid-cols-2 gap-8">
+                                                        <div>
+                                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Description</h4>
+                                                            <p className="text-slate-300 text-sm whitespace-pre-wrap bg-black/40 p-4 rounded-lg border border-white/5">
+                                                                {ticket.description}
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Metadata</h4>
+                                                            <div className="bg-black/40 p-4 rounded-lg border border-white/5 space-y-2 text-sm">
+                                                                <div className="flex justify-between border-b border-white/5 pb-2">
+                                                                    <span className="text-slate-400">Created At:</span>
+                                                                    <span>{new Date(ticket.created_at).toLocaleString()}</span>
+                                                                </div>
+                                                                <div className="flex justify-between border-b border-white/5 pb-2">
+                                                                    <span className="text-slate-400">Database ID:</span>
+                                                                    <span>{ticket.id}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-slate-400">Current Status:</span>
+                                                                    <span className={getStatusBadge(ticket.status)}>{ticket.status}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('react-tickets-root'));
+        root.render(<TicketDashboard />);
+    </script>
+
+    <!-- Vanilla JS Logic for existing features -->
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+
+        // Tab Switching Logic
+        const tabs = document.querySelectorAll('.sidebar-item[data-tab]');
+        const contents = document.querySelectorAll('.tab-content');
+        const pageTitle = document.getElementById('page-title');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.classList.remove('active'));
                 
-                btn.classList.add('active');
-                document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+                // Add active to clicked
+                tab.classList.add('active');
+                const targetId = tab.getAttribute('data-tab');
+                document.getElementById(targetId).classList.add('active');
+                
+                // Update title
+                pageTitle.innerText = tab.querySelector('span').innerText;
             });
         });
 
-        // Authentication & Main Data Load
-        let gPasscode = '';
-        
         document.getElementById('login-btn').addEventListener('click', () => {
             const passcode = document.getElementById('admin-passcode').value;
             fetch('/api/admin/data', {
@@ -225,167 +571,146 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    gPasscode = passcode;
                     sessionStorage.setItem('admin-passcode', passcode);
-                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('login-overlay').classList.add('hidden');
                     document.getElementById('dashboard-content').classList.remove('hidden');
                     renderDashboard(data);
-                    loadTickets();
+                    window.dispatchEvent(new Event('admin-unlocked'));
                 } else {
-                    document.getElementById('login-error').innerText = "Error: " + (data.error || "Invalid Passcode");
-                    document.getElementById('login-error').style.display = 'block';
+                    document.getElementById('login-error').classList.remove('hidden');
                 }
             })
             .catch(err => {
-                console.error("Login Error:", err);
-                document.getElementById('login-error').innerText = "Dashboard Error: " + err.message;
-                document.getElementById('login-error').style.display = 'block';
+                document.getElementById('login-error').innerText = "Network Error";
+                document.getElementById('login-error').classList.remove('hidden');
             });
         });
 
         document.getElementById('logout-btn').addEventListener('click', () => {
             sessionStorage.removeItem('admin-passcode');
-            gPasscode = '';
             document.getElementById('admin-passcode').value = '';
             document.getElementById('dashboard-content').classList.add('hidden');
-            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('login-overlay').classList.remove('hidden');
         });
 
         function renderDashboard(data) {
+            if (data.assistant_name) {
+                document.getElementById('admin-assistant-name').value = data.assistant_name;
+            }
             let totalRevenue = 0;
+            let totalRefunded = 0;
             let successCount = 0;
             const txBody = document.getElementById('tx-table-body');
             txBody.innerHTML = '';
 
             data.transactions.forEach(tx => {
-                const statusStr = (tx.status || 'pending').toLowerCase();
-                if (statusStr === 'success' || statusStr === 'paid') {
+                if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') {
                     totalRevenue += tx.amount;
                     successCount++;
+                } else if (tx.status.toLowerCase() === 'refunded') {
+                    totalRefunded += tx.amount;
                 }
+                
                 let statusClass = 'pending';
-                if (statusStr === 'success' || statusStr === 'paid') statusClass = 'success';
-                else if (statusStr === 'failed' || statusStr === 'refunded') statusClass = 'failed';
+                if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') statusClass = 'success';
+                else if (tx.status.toLowerCase() === 'failed') statusClass = 'failed';
+                else if (tx.status.toLowerCase() === 'refunded') statusClass = 'failed'; // reuse failed class for red
 
                 txBody.innerHTML += `
                     <tr>
                         <td>${tx.order_id}</td>
                         <td>${tx.user_identifier}</td>
-                        <td style="color: var(--primary-color); font-weight: bold;">₹${tx.amount.toFixed(2)}</td>
+                        <td class="font-bold text-primary">₹${tx.amount.toFixed(2)}</td>
                         <td><span class="badge ${statusClass}">${tx.status.toUpperCase()}</span></td>
-                        <td style="color: var(--text-muted);">${new Date(tx.created_at).toLocaleString()}</td>
+                        <td class="text-slate-400 text-sm">${new Date(tx.created_at).toLocaleString()}</td>
                     </tr>
                 `;
             });
 
             document.getElementById('metric-revenue').innerText = '₹' + totalRevenue.toLocaleString();
+            document.getElementById('metric-refunded').innerText = '₹' + totalRefunded.toLocaleString();
             document.getElementById('metric-tx-count').innerText = successCount;
             document.getElementById('metric-plans-count').innerText = data.purchases.length;
 
-            const pBody = document.getElementById('purchases-table-body');
-            pBody.innerHTML = '';
-            data.purchases.forEach(p => {
-                pBody.innerHTML += `
-                    <tr>
-                        <td style="font-weight: 600;">${p.user_identifier}</td>
-                        <td>${p.brand_name}</td>
-                        <td><span class="badge" style="background: rgba(255,255,255,0.1); color: white;">${(p.flow_type || 'N/A').toUpperCase()}</span></td>
-                        <td style="color: var(--text-muted);">${new Date(p.created_at).toLocaleString()}</td>
-                    </tr>
-                `;
-            });
-
-            // Render Analytics
             if (data.analytics) {
                 document.getElementById('funnel-visits').innerText = data.analytics.page_view || 0;
                 document.getElementById('funnel-entered').innerText = data.analytics.entered_number || 0;
                 document.getElementById('funnel-logged').innerText = data.analytics.logged_in || 0;
                 document.getElementById('funnel-checkout').innerText = data.analytics.checkout_started || 0;
                 document.getElementById('funnel-purchased').innerText = data.analytics.purchase_success || successCount;
-
-                if (data.analytics.leads) {
-                    const leadsBody = document.getElementById('leads-table-body');
-                    leadsBody.innerHTML = '';
-                    if (data.analytics.leads.length === 0) {
-                        leadsBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No leads captured yet.</td></tr>';
-                    } else {
-                        data.analytics.leads.forEach(lead => {
-                            leadsBody.innerHTML += `
-                                <tr>
-                                    <td style="font-weight: bold; color: white;">${lead.contact}<br><span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">${lead.email || ''}</span></td>
-                                    <td style="color: var(--accent);">${lead.stage}</td>
-                                    <td style="color: var(--text-muted);">${new Date(lead.last_active).toLocaleString()}</td>
-                                </tr>
-                            `;
-                        });
-                    }
-                }
             }
-        }
 
-        // Support Tickets Logic
-        document.getElementById('refresh-tickets-btn').addEventListener('click', loadTickets);
+            const pBody = document.getElementById('purchases-table-body');
+            pBody.innerHTML = '';
+            data.purchases.forEach(p => {
+                pBody.innerHTML += `
+                    <tr>
+                        <td class="font-semibold">${p.user_identifier}</td>
+                        <td>${p.brand_name}</td>
+                        <td><span class="badge" style="background: rgba(255,255,255,0.1); color: white;">${p.flow_type.toUpperCase()}</span></td>
+                        <td class="text-slate-400 text-sm">${new Date(p.created_at).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
 
-        function loadTickets() {
-            if (!gPasscode) return;
-            fetch('/api/support/tickets')
-            .then(res => res.json())
-            .then(data => {
-                const tbody = document.getElementById('tickets-table-body');
-                tbody.innerHTML = '';
-                if(data.success && data.tickets) {
-                    if(data.tickets.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No tickets found.</td></tr>';
-                        return;
-                    }
-                    data.tickets.forEach(ticket => {
-                        const statusClass = ticket.status === 'OPEN' ? 'failed' : ticket.status === 'RESOLVED' ? 'success' : 'pending';
-                        const selectHtml = `
-                            <select onchange="updateTicketStatus(${ticket.ticket_id}, this.value)" style="background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px;" ${ticket.status === 'REFUNDED' ? 'disabled' : ''}>
-                                <option value="OPEN" ${ticket.status === 'OPEN' ? 'selected' : ''}>OPEN</option>
-                                <option value="IN_PROGRESS" ${ticket.status === 'IN_PROGRESS' ? 'selected' : ''}>IN PROGRESS</option>
-                                <option value="RESOLVED" ${ticket.status === 'RESOLVED' ? 'selected' : ''}>RESOLVED</option>
-                                <option value="REFUNDED" ${ticket.status === 'REFUNDED' ? 'selected' : ''}>REFUNDED</option>
-                            </select>
-                        `;
-                        tbody.innerHTML += `
-                            <tr>
-                                <td>${ticket.ticket_id}</td>
-                                <td>${selectHtml}</td>
-                                <td>${ticket.user_phone}</td>
-                                <td style="color: var(--accent);">${ticket.issue_type}</td>
-                                <td>${ticket.target_number || '-'}</td>
-                                <td><button onclick="alert('Description:\\n${(ticket.description || 'No description').replace(/\"/g, '&quot;')}')" class="nav-btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">View</button></td>
+            if (data.analytics && data.analytics.leads) {
+                const leadsBody = document.getElementById('leads-table-body');
+                leadsBody.innerHTML = '';
+                if (data.analytics.leads.length === 0) {
+                    leadsBody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500">No leads captured yet.</td></tr>';
+                } else {
+                    data.analytics.leads.forEach(lead => {
+                        let stageClass = 'text-slate-400';
+                        if (lead.stage === 'Purchased') stageClass = 'text-green-400 font-bold';
+                        else if (lead.stage === 'Started Checkout') stageClass = 'text-accent';
+                        else if (lead.stage === 'Verified OTP') stageClass = 'text-yellow-400';
+                        
+                        leadsBody.innerHTML += `
+                            <tr class="hover:bg-white/5 transition">
+                                <td class="font-bold text-white">
+                                    ${lead.contact || 'No Phone'}
+                                    ${lead.email ? `<br><span class="text-xs text-slate-400 font-normal mt-1 block"><i data-lucide="mail" class="w-3 h-3 inline"></i> ${lead.email}</span>` : ''}
+                                </td>
+                                <td class="${stageClass}">${lead.stage}</td>
+                                <td class="text-slate-400 text-sm">${new Date(lead.last_active).toLocaleString()}</td>
+                                <td>
+                                    ${lead.contact ? `<a href="https://wa.me/${lead.contact.replace('+','')}" target="_blank" class="px-3 py-1 bg-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/30 border border-[#25D366]/50 rounded text-xs font-bold transition flex items-center gap-1 w-max mb-1">
+                                        <i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp
+                                    </a>` : ''}
+                                    ${lead.email ? `<a href="mailto:${lead.email}" target="_blank" class="px-3 py-1 bg-[#00BFFF]/20 text-[#00BFFF] hover:bg-[#00BFFF]/30 border border-[#00BFFF]/50 rounded text-xs font-bold transition flex items-center gap-1 w-max">
+                                        <i data-lucide="mail" class="w-3 h-3"></i> Email
+                                    </a>` : ''}
+                                </td>
                             </tr>
                         `;
                     });
-                }
-            });
-        }
-
-        window.updateTicketStatus = function(ticketId, newStatus) {
-            if (newStatus === 'REFUNDED') {
-                if(!confirm("Are you sure you want to refund this ticket? This cannot be undone!")) {
-                    loadTickets();
-                    return;
+                    lucide.createIcons();
                 }
             }
-            fetch(`/api/support/tickets/${ticketId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
+        }
+
+        document.getElementById('save-assistant-name').addEventListener('click', () => {
+            const newName = document.getElementById('admin-assistant-name').value.trim();
+            if (!newName) return;
+
+            const passcode = sessionStorage.getItem('admin-passcode');
+            fetch('/api/admin/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ passcode: passcode, assistant_name: newName })
             })
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
-                    if(data.refund_message) alert("Refund Processed: " + data.refund_message);
-                    loadTickets();
+                    const msg = document.getElementById('save-settings-msg');
+                    msg.classList.remove('hidden');
+                    setTimeout(() => msg.classList.add('hidden'), 3000);
                 } else {
-                    alert("Error: " + data.error);
-                    loadTickets();
+                    alert('Error saving name: ' + data.error);
                 }
-            });
-        };
+            })
+            .catch(err => console.error(err));
+        });
     </script>
 </body>
 </html>
