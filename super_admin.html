@@ -86,110 +86,26 @@
 </head>
 <body class="bg-dark text-slate-100 font-['Plus_Jakarta_Sans'] min-h-screen overflow-hidden">
     
+    
     <!-- Login Overlay -->
-    <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-dark">
-        <div class="glass-card w-full max-w-md p-8 rounded-2xl text-center">
-            <div class="w-16 h-16 mx-auto bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center mb-6">
-                <i data-lucide="shield" class="w-8 h-8 text-white"></i>
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center">
+        <div class="glass-card rounded-2xl p-10 max-w-md w-full text-center">
+            <div class="mb-6 flex justify-center">
+                <div class="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                    <i data-lucide="shield" class="w-8 h-8"></i>
+                </div>
             </div>
-            <h2 class="text-2xl font-bold mb-6 text-white">Admin Access</h2>
-            <input type="password" id="admin-passcode" placeholder="Enter Passcode" class="w-full mb-6 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition">
-            <button id="login-btn" class="primary-glow-btn full-width py-4 rounded-xl">Unlock Dashboard</button>
-            <p id="login-error" class="text-red-500 mt-4 hidden">Invalid Passcode</p>
+            <h2 class="text-3xl font-bold text-white mb-2">Portal Access</h2>
+            <p class="text-slate-400 mb-8">Please sign in to continue</p>
+            <div class="space-y-4">
+                <input type="email" id="login-email" placeholder="Email Address" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none">
+                <input type="password" id="login-password" placeholder="Password" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none">
+                <button onclick="handleLogin()" class="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all">Sign In</button>
+                <div id="login-error" class="text-red-400 text-sm mt-2 hidden">Invalid credentials</div>
+            </div>
         </div>
     </div>
 
-    <!-- Main App Layout -->
-    <div id="dashboard-content" class="hidden flex h-screen w-full">
-        
-        <!-- Left Sidebar -->
-        <aside class="w-64 bg-surface border-r border-white/10 flex flex-col">
-            <div class="p-6 border-b border-white/10 flex items-center gap-3">
-                <div class="w-8 h-8 rounded bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <i data-lucide="zap" class="w-4 h-4 text-white"></i>
-                </div>
-                <span class="font-bold text-lg tracking-tight">Admin Portal</span>
-            </div>
-            
-            <nav class="flex-1 p-4 space-y-2">
-                <div class="sidebar-item active" data-tab="tab-overview">
-                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-                    <span>Overview</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-business">
-                    <i data-lucide="briefcase" class="w-5 h-5"></i>
-                    <span>Business Analytics</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-marketing">
-                    <i data-lucide="trending-up" class="w-5 h-5"></i>
-                    <span>Marketing Data</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-analytics">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                    <span>Analytics Funnel</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-support">
-                    <i data-lucide="headphones" class="w-5 h-5"></i>
-                    <span>Support Tickets</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-users">
-                    <i data-lucide="users" class="w-5 h-5"></i>
-                    <span>User Management</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-recharges">
-                    <i data-lucide="smartphone" class="w-5 h-5"></i>
-                    <span>Recharge Management</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-fraud">
-                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
-                    <span>Fraud Controls</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-settings">
-                    <i data-lucide="settings" class="w-5 h-5"></i>
-                    <span>Global Settings</span>
-                </div>
-            </nav>
-            
-            <div class="p-4 border-t border-white/10">
-                <div id="logout-btn" class="sidebar-item text-red-400 hover:text-red-300 hover:bg-red-500/10">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
-                    <span>Lock Dashboard</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto bg-dark p-8">
-            <header class="flex justify-between items-center mb-8 pb-4 border-b border-white/10">
-                <h1 id="page-title" class="text-2xl font-bold">Dashboard Overview</h1>
-                <div class="flex items-center gap-4">
-                    <span class="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/50 rounded-full text-xs font-bold flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                        LIVE
-                    </span>
-                </div>
-            </header>
-
-            <!-- TAB 1: OVERVIEW -->
-            <div id="tab-overview" class="tab-content active">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="glass-card p-6 rounded-xl text-center">
-                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Revenue</h3>
-                        <div class="text-4xl font-bold text-primary" id="metric-revenue">₹0</div>
-                    </div>
-                    <div class="glass-card p-6 rounded-xl text-center">
-                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Refunded</h3>
-                        <div class="text-4xl font-bold text-red-500" id="metric-refunded">₹0</div>
-                    </div>
-                    <div class="glass-card p-6 rounded-xl text-center">
-                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Successful Txns</h3>
-                        <div class="text-4xl font-bold text-white" id="metric-tx-count">0</div>
-                    </div>
-                    <div class="glass-card p-6 rounded-xl text-center">
-                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Active Plans Sold</h3>
-                        <div class="text-4xl font-bold text-accent" id="metric-plans-count">0</div>
-                    </div>
-                </div>
 
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
                     <div class="glass-card rounded-xl overflow-hidden">
@@ -483,7 +399,7 @@
             const fetchTickets = async () => {
                 setLoading(true);
                 try {
-                    const res = await fetch('/api/support/tickets');
+                    const res = await fetch('/api/super-admin/tickets', {headers: {'Authorization': `Bearer ${authToken}`}}));
                     const data = await res.json();
                     if (data.success) {
                         setTickets(data.tickets || []);
@@ -499,7 +415,7 @@
 
             useEffect(() => {
                 const interval = setInterval(() => {
-                    if (sessionStorage.getItem('admin-passcode') && !confirmDialog) fetchTickets();
+                    if (authToken && !confirmDialog) fetchTickets();
                 }, 10000);
                 window.addEventListener('admin-unlocked', fetchTickets);
                 return () => {
@@ -522,7 +438,7 @@
 
             const processStatusUpdate = async (ticketId, newStatus) => {
                 try {
-                    const res = await fetch(`/api/support/tickets/${ticketId}`, {
+                    const res = await fetch(`/api/super-admin/tickets/${ticketId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status: newStatus })
@@ -532,9 +448,9 @@
                         setTickets(tickets.map(t => t.ticket_id === ticketId ? { ...t, status: newStatus } : t));
                         if (data.refund_message) {
                             showToast("Automated Refund:\n" + data.refund_message, 'success');
-                            const passcode = sessionStorage.getItem('admin-passcode');
+                            const passcode = authToken;
                             if (passcode) {
-                                fetch('/api/admin/data', {
+                                fetch('/api/super-admin/data', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ passcode })
@@ -811,22 +727,22 @@
         window.renderAdminReactComponents = (data) => {
             const handleUserAction = async (action, phone) => {
                 try {
-                    await fetch('/api/admin/users/action', {
+                    await fetch('/api/super-admin/users/action', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), action, phone_number: phone})
+                        
+                        headers: {'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json'}, body: JSON.stringify({action, phone_number: phone})
                     });
-                    document.getElementById('login-btn').click(); // Refresh
+                    triggerRefresh(); // Refresh
                 } catch(e) {}
             };
             const handleRetry = async (order_id) => {
                 try {
-                    await fetch('/api/admin/recharges/retry', {
+                    await fetch('/api/super-admin/recharges/retry', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), order_id})
+                        
+                        headers: {'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json'}, body: JSON.stringify({order_id})
                     });
-                    document.getElementById('login-btn').click(); // Refresh
+                    triggerRefresh(); // Refresh
                 } catch(e) {}
             };
 
@@ -855,6 +771,56 @@
         // Init Lucide Icons
         lucide.createIcons();
 
+
+        let authToken = sessionStorage.getItem('adminToken');
+        
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    authToken = data.token;
+                    sessionStorage.setItem('adminToken', data.token);
+                    document.getElementById('login-overlay').classList.add('hidden');
+                    document.getElementById('dashboard-content').classList.remove('hidden');
+                    
+                    // Fetch data
+                    fetch('/api/super-admin/data', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                        if(d.success) {
+                            renderDashboard(d);
+                            window.dispatchEvent(new Event('admin-unlocked'));
+                        }
+                    });
+                } else {
+                    document.getElementById('login-error').innerText = data.error;
+                    document.getElementById('login-error').classList.remove('hidden');
+                }
+            } catch (e) {
+                document.getElementById('login-error').innerText = 'Network error: Is server running?';
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+
+        function triggerRefresh() {
+            if(authToken) {
+                fetch('/api/super-admin/data', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }})
+                .then(r => r.json())
+                .then(d => { if(d.success) renderDashboard(d); });
+            }
+        }
+    
         // Tab Switching Logic
         const tabs = document.querySelectorAll('.sidebar-item[data-tab]');
         const contents = document.querySelectorAll('.tab-content');
@@ -876,38 +842,17 @@
             });
         });
 
-        document.getElementById('login-btn').addEventListener('click', () => {
-            const passcode = document.getElementById('admin-passcode').value;
-            fetch('/api/admin/data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ passcode })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    sessionStorage.setItem('admin-passcode', passcode);
-                    document.getElementById('login-overlay').classList.add('hidden');
-                    document.getElementById('dashboard-content').classList.remove('hidden');
-                    renderDashboard(data);
-                    window.dispatchEvent(new Event('admin-unlocked'));
-                } else {
-                    document.getElementById('login-error').innerText = data.error || "Invalid Passcode";
-                    document.getElementById('login-error').classList.remove('hidden');
-                }
-            })
-            .catch(err => {
-                document.getElementById('login-error').innerText = "Network Error: Is the server running?";
-                document.getElementById('login-error').classList.remove('hidden');
-            });
-        });
-
+        
+        
         document.getElementById('logout-btn').addEventListener('click', () => {
-            sessionStorage.removeItem('admin-passcode');
-            document.getElementById('admin-passcode').value = '';
+            sessionStorage.removeItem('adminToken');
+            authToken = null;
             document.getElementById('dashboard-content').classList.add('hidden');
             document.getElementById('login-overlay').classList.remove('hidden');
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
         });
+    
 
         function renderDashboard(data) {
             if (data.assistant_name) {
@@ -1063,6 +1008,64 @@
                 });
             }
             
+
+        async function updateAdvancedConfig(key, value) {
+            try {
+                const res = await fetch('/api/super-admin/config-update', {
+                    method: 'POST',
+                    headers: {'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json'},
+                    body: JSON.stringify({ key, value })
+                });
+                const data = await res.json();
+                if(data.success) alert("Updated successfully!");
+                else alert("Error: " + data.error);
+            } catch (e) { alert("Network error"); }
+        }
+
+        async function createStaff() {
+            const email = document.getElementById('staff-email').value;
+            const password = document.getElementById('staff-password').value;
+            const role = document.getElementById('staff-role').value;
+            try {
+                const res = await fetch('/api/super-admin/staff', {
+                    method: 'POST',
+                    headers: {'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'create', email, password, role })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert("Staff created successfully!");
+                    document.getElementById('staff-email').value = '';
+                    document.getElementById('staff-password').value = '';
+                }
+                else alert("Error: " + data.error);
+            } catch (e) { alert("Network error"); }
+        }
+
+        async function fetchAuditLogs() {
+            try {
+                const res = await fetch('/api/super-admin/logs', {
+                    headers: {'Authorization': `Bearer ${authToken}`}
+                });
+                const data = await res.json();
+                if(data.success) {
+                    const tbody = document.getElementById('audit-logs-body');
+                    tbody.innerHTML = '';
+                    data.logs.forEach(log => {
+                        tbody.innerHTML += `
+                            <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                <td class="py-3 pr-4">${new Date(log.created_at).toLocaleString()}</td>
+                                <td class="py-3 pr-4 text-accent">${log.admin_email}</td>
+                                <td class="py-3 pr-4 font-bold">${log.action}</td>
+                                <td class="py-3 pr-4 text-slate-400">${log.details || '-'}</td>
+                                <td class="py-3 text-slate-500">${log.ip_address}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            } catch (e) { console.error(e); }
+        }
+
             if (window.renderAdminReactComponents) {
                 window.renderAdminReactComponents(data);
             }
@@ -1072,10 +1075,10 @@
             const newName = document.getElementById('admin-assistant-name').value.trim();
             if (!newName) return;
 
-            const passcode = sessionStorage.getItem('admin-passcode');
-            fetch('/api/admin/config', {
+            const passcode = authToken;
+            fetch('/api/super-admin/config', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                
                 body: JSON.stringify({ passcode: passcode, assistant_name: newName })
             })
             .then(res => res.json())
