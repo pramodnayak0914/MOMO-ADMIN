@@ -3,855 +3,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OnlineRecharge-AI Admin</title>
+    <title>MOMO-AI Admin Portal</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/jpeg" href="logo.jpg">
-    <!-- React & Tailwind dependencies -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#0a0f19',
-                        surface: '#121826',
-                        'surface-light': '#1e2536',
-                        primary: '#ff3366',
-                        accent: '#00d8f6',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        .sidebar-item {
+        /* Add minimal styling for navigation tabs */
+        .top-nav {
             display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            color: #94a3b8;
-            transition: all 0.2s;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 1rem;
+            overflow-x: auto;
+        }
+        .nav-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
             cursor: pointer;
-        }
-        .sidebar-item:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: white;
-        }
-        .sidebar-item.active {
-            background-color: rgba(255, 51, 102, 0.1);
-            color: var(--primary-color);
+            font-family: var(--font-main);
             font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
-        .tab-content {
+        .nav-btn:hover {
+            color: white;
+            border-color: rgba(255,255,255,0.3);
+        }
+        .nav-btn.active {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .tab-section {
             display: none;
-            animation: fadeIn 0.3s ease-in-out;
+            animation: fadeIn 0.3s ease;
         }
-        .tab-content.active {
+        .tab-section.active {
             display: block;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Support Ticket React Table Overrides */
-        .react-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .react-table th {
-            text-align: left;
-            padding: 1rem;
-            color: #94a3b8;
-            font-weight: 600;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            background: rgba(0,0,0,0.2);
-        }
-        .react-table td {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            color: #e2e8f0;
-        }
-        .react-table tr:hover {
-            background-color: rgba(255,255,255,0.02);
         }
     </style>
 </head>
-<body class="bg-dark text-slate-100 font-['Plus_Jakarta_Sans'] min-h-screen overflow-hidden">
-    
-    
-    <!-- Login Overlay -->
-    <div id="login-overlay" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center">
-        <div class="glass-card rounded-2xl p-10 max-w-md w-full text-center">
-            <div class="mb-6 flex justify-center">
-                <div class="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                    <i data-lucide="shield" class="w-8 h-8"></i>
+<body>
+    <div id="login-overlay">
+        <div class="login-box glass-card">
+            <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">Admin Access</h2>
+            <input type="password" id="admin-passcode" placeholder="Enter Passcode" style="width: 100%; margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;" onkeypress="if(event.key==='Enter') document.getElementById('login-btn').click();">
+            <button id="login-btn" class="primary-glow-btn full-width">Unlock Dashboard</button>
+            <p id="login-error" style="color: #ff4757; margin-top: 1rem; display: none;">Invalid Passcode</p>
+        </div>
+    </div>
+
+    <div class="admin-layout hidden" id="dashboard-content">
+        <div class="admin-header" style="margin-bottom: 1rem; border-bottom: none;">
+            <div>
+                <h1 style="color: var(--text-light);">MOMO-AI Admin</h1>
+                <p style="color: var(--text-muted);">Real-time metrics and configurations.</p>
+            </div>
+            <button class="primary-glow-btn" id="logout-btn" style="padding: 0.5rem 1rem;">Lock</button>
+        </div>
+
+        <nav class="top-nav">
+            <button class="nav-btn active" data-target="tab-overview">Overview</button>
+            <button class="nav-btn" data-target="tab-analytics">Business Analytics</button>
+            <button class="nav-btn" data-target="tab-support">Support Tickets</button>
+        </nav>
+
+        <!-- TAB: OVERVIEW -->
+        <div id="tab-overview" class="tab-section active">
+            <div class="admin-metrics">
+                <div class="metric-card">
+                    <h3>Total Revenue</h3>
+                    <div class="value" id="metric-revenue">₹0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Total Successful Transactions</h3>
+                    <div class="value" id="metric-tx-count">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Active Plans Sold</h3>
+                    <div class="value" id="metric-plans-count">0</div>
                 </div>
             </div>
-            <h2 class="text-3xl font-bold text-white mb-2">Portal Access</h2>
-            <p class="text-slate-400 mb-8">Please enter your passcode to continue</p>
-            <div class="space-y-4">
-                <input type="password" id="login-passcode" placeholder="Passcode" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none" onkeypress="if(event.key === 'Enter') handleLogin()">
-                <button onclick="handleLogin()" class="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all">Unlock Dashboard</button>
-                <div id="login-error" class="text-red-400 text-sm mt-2 hidden">Invalid Passcode</div>
+
+            <h2 style="margin-bottom: 1rem; color: var(--text-light);">Recent Transactions</h2>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>User Identifier</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tx-table-body">
+                        <!-- Rows injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <h2 style="margin-top: 3rem; margin-bottom: 1rem; color: var(--text-light);">Recent Plan Activations</h2>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Target Account</th>
+                            <th>Brand</th>
+                            <th>Plan Type</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchases-table-body">
+                        <!-- Rows injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: BUSINESS ANALYTICS & MARKETING -->
+        <div id="tab-analytics" class="tab-section">
+            <div class="admin-metrics" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+                <div class="metric-card">
+                    <h3>Total Visitors</h3>
+                    <div class="value" id="funnel-visits" style="color: white; font-size: 2rem;">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Entered Number</h3>
+                    <div class="value" id="funnel-entered" style="color: white; font-size: 2rem;">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Verified OTP</h3>
+                    <div class="value" id="funnel-logged" style="color: white; font-size: 2rem;">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Checkout Started</h3>
+                    <div class="value" id="funnel-checkout" style="color: white; font-size: 2rem;">0</div>
+                </div>
+                <div class="metric-card" style="border-color: var(--primary-color);">
+                    <h3 style="color: var(--primary-color);">Purchased</h3>
+                    <div class="value" id="funnel-purchased" style="font-size: 2rem;">0</div>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 3rem; margin-bottom: 1rem; color: var(--text-light);">Sales Leads (Funnel Drop-offs)</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">Contacts captured from visitors who abandoned checkout.</p>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Phone / Email</th>
+                            <th>Furthest Stage Reached</th>
+                            <th>Last Active</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leads-table-body">
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Loading leads...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: SUPPORT TICKETS -->
+        <div id="tab-support" class="tab-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="color: var(--text-light); margin: 0;">Support Center</h2>
+                <button id="refresh-tickets-btn" class="nav-btn" style="padding: 0.25rem 1rem;">Refresh</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>Status</th>
+                            <th>User Phone</th>
+                            <th>Issue Type</th>
+                            <th>Target Number</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tickets-table-body">
+                        <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading tickets...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <div class="glass-card rounded-xl overflow-hidden">
-                        <div class="p-6 border-b border-white/5 flex justify-between items-center">
-                            <h2 class="text-lg font-bold">Recent Transactions</h2>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="data-table w-full">
-                                <thead>
-                                    <tr>
-                                        <th>Order ID</th>
-                                        <th>User Identifier</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tx-table-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="glass-card rounded-xl overflow-hidden">
-                        <div class="p-6 border-b border-white/5">
-                            <h2 class="text-lg font-bold">Recent Plan Activations</h2>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="data-table w-full">
-                                <thead>
-                                    <tr>
-                                        <th>Target Account</th>
-                                        <th>Brand</th>
-                                        <th>Plan Type</th>
-                                        <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="purchases-table-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB BUSINESS ANALYTICS -->
-            <div id="tab-business" class="tab-content">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <!-- Revenue -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="indian-rupee" class="w-6 h-6 text-primary"></i> Revenue
-                        </h2>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Today</h4>
-                                <div id="biz-rev-today" class="text-2xl font-bold text-white">₹0</div>
-                            </div>
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Monthly</h4>
-                                <div id="biz-rev-monthly" class="text-2xl font-bold text-primary">₹0</div>
-                            </div>
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Total</h4>
-                                <div id="biz-rev-total" class="text-2xl font-bold text-accent">₹0</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Recharge -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="smartphone" class="w-6 h-6 text-primary"></i> Recharge
-                        </h2>
-                        <div class="flex items-center justify-between mb-4">
-                            <h4 class="text-slate-400 text-sm">Total Count</h4>
-                            <div id="biz-rec-count" class="text-2xl font-bold text-white">0</div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <div class="bg-green-500/10 p-3 rounded-lg border border-green-500/20 text-center">
-                                <h4 class="text-green-400 text-xs uppercase tracking-wider mb-1">Success</h4>
-                                <div id="biz-rec-success" class="text-lg font-bold text-green-400">0%</div>
-                            </div>
-                            <div class="bg-red-500/10 p-3 rounded-lg border border-red-500/20 text-center">
-                                <h4 class="text-red-400 text-xs uppercase tracking-wider mb-1">Failure</h4>
-                                <div id="biz-rec-fail" class="text-lg font-bold text-red-400">0%</div>
-                            </div>
-                            <div class="bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/20 text-center">
-                                <h4 class="text-yellow-400 text-xs uppercase tracking-wider mb-1">Pending</h4>
-                                <div id="biz-rec-pend" class="text-lg font-bold text-yellow-400">0%</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Users -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="users" class="w-6 h-6 text-primary"></i> Users
-                        </h2>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">New Today</h4>
-                                <div id="biz-user-new" class="text-2xl font-bold text-white">0</div>
-                            </div>
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Active</h4>
-                                <div id="biz-user-active" class="text-2xl font-bold text-primary">0</div>
-                            </div>
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Returning</h4>
-                                <div id="biz-user-return" class="text-2xl font-bold text-accent">0</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Operators -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="bar-chart-2" class="w-6 h-6 text-primary"></i> Operators
-                        </h2>
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                                <h4 class="text-slate-400 text-sm">Top Operator</h4>
-                                <div id="biz-op-top" class="text-md font-bold text-white">N/A</div>
-                            </div>
-                            <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                                <h4 class="text-slate-400 text-sm">Top Recharge Plan</h4>
-                                <div id="biz-op-plan" class="text-md font-bold text-primary">N/A</div>
-                            </div>
-                            <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                                <h4 class="text-slate-400 text-sm">Most Profitable</h4>
-                                <div id="biz-op-profit" class="text-md font-bold text-accent">N/A</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB MARKETING DATA -->
-            <div id="tab-marketing" class="tab-content">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <!-- Popular Plan -->
-                    <div class="glass-card rounded-xl p-8 col-span-1 md:col-span-2 bg-gradient-to-r from-primary/20 to-transparent border border-primary/30">
-                        <h2 class="text-xl font-bold mb-2 flex items-center gap-2">
-                            <i data-lucide="star" class="w-6 h-6 text-yellow-400"></i> Most Popular Plan
-                        </h2>
-                        <div class="text-3xl font-bold text-white mb-2" id="mkt-popular-plan-desc">Loading...</div>
-                        <p class="text-slate-400 text-lg">Recharged by <span id="mkt-popular-plan-count" class="text-accent font-bold">0</span> users</p>
-                    </div>
-
-                    <!-- Most Recharged Amounts -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="indian-rupee" class="w-6 h-6 text-green-400"></i> Top Recharged Amounts
-                        </h2>
-                        <div id="mkt-amounts-list" class="space-y-3">
-                            <!-- Injected by JS -->
-                        </div>
-                    </div>
-
-                    <!-- Operator Popularity -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="pie-chart" class="w-6 h-6 text-blue-400"></i> Operator Popularity
-                        </h2>
-                        <div id="mkt-operator-list" class="space-y-3">
-                            <!-- Injected by JS -->
-                        </div>
-                    </div>
-                    
-                    <!-- Acquisition Source -->
-                    <div class="glass-card rounded-xl p-8 md:col-span-2">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="globe" class="w-6 h-6 text-purple-400"></i> User Acquisition Source
-                        </h2>
-                        <div class="grid grid-cols-3 gap-4" id="mkt-acquisition-list">
-                            <!-- Injected by JS -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 2: ANALYTICS -->
-            <div id="tab-analytics" class="tab-content">
-                <div class="glass-card rounded-xl p-8 mb-8">
-                    <h2 class="text-xl font-bold mb-8">Conversion Funnel</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
-                            <h4 class="text-slate-400 text-sm mb-2">Total Visitors</h4>
-                            <div id="funnel-visits" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
-                            <h4 class="text-slate-400 text-sm mb-2">Entered Number</h4>
-                            <div id="funnel-entered" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
-                            <h4 class="text-slate-400 text-sm mb-2">Verified OTP</h4>
-                            <div id="funnel-logged" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
-                            <h4 class="text-slate-400 text-sm mb-2">Checkout Started</h4>
-                            <div id="funnel-checkout" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-primary/10 p-6 rounded-xl border border-primary/30">
-                            <h4 class="text-primary text-sm mb-2 font-bold">Purchased</h4>
-                            <div id="funnel-purchased" class="text-3xl font-bold text-primary">0</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="glass-card rounded-xl overflow-hidden mt-8">
-                    <div class="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
-                        <h2 class="text-lg font-bold">Sales Leads (Funnel Drop-offs)</h2>
-                        <span class="text-sm text-slate-400">Contacts captured from visitors</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="data-table w-full">
-                            <thead>
-                                <tr>
-                                    <th>Phone / Email</th>
-                                    <th>Furthest Stage Reached</th>
-                                    <th>Last Active</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leads-table-body">
-                                <tr><td colspan="4" class="text-center py-8 text-slate-500">Loading leads...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 3: SUPPORT -->
-            <div id="tab-support" class="tab-content">
-                <div id="react-tickets-root"></div>
-            </div>
-
-            <!-- TAB: USERS -->
-            <div id="tab-users" class="tab-content">
-                <div id="react-users-root"></div>
-            </div>
-
-            <!-- TAB: RECHARGES -->
-            <div id="tab-recharges" class="tab-content">
-                <div id="react-recharges-root"></div>
-            </div>
-
-            <!-- TAB: FRAUD -->
-            <div id="tab-fraud" class="tab-content">
-                <div id="react-fraud-root"></div>
-            </div>
-
-            <!-- TAB 4: SETTINGS -->
-            <div id="tab-settings" class="tab-content">
-                <div class="glass-card rounded-xl p-8 max-w-2xl">
-                    <h2 class="text-xl font-bold mb-6">AI Assistant Configuration</h2>
-                    
-                    <div class="mb-6">
-                        <label class="block text-sm font-semibold text-slate-400 mb-2">🤖 Assistant Name</label>
-                        <p class="text-slate-500 text-sm mb-4">This name will be updated instantly on the public website for all users.</p>
-                        <div class="flex gap-4">
-                            <input type="text" id="admin-assistant-name" placeholder="e.g. OnlineRecharge" class="flex-1 p-3 rounded-lg border border-white/20 bg-black/50 text-white outline-none focus:border-primary">
-                            <button id="save-assistant-name" class="primary-glow-btn px-6 py-3">Save Changes</button>
-                        </div>
-                        <p id="save-settings-msg" class="text-green-400 mt-3 text-sm hidden flex items-center gap-2">
-                            <i data-lucide="check-circle" class="w-4 h-4"></i> Successfully updated!
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-    </div>
-
-    <!-- React Tickets Component -->
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        function TicketDashboard() {
-            const [tickets, setTickets] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-            const [expandedRow, setExpandedRow] = useState(null);
-            const [toast, setToast] = useState(null);
-            const [confirmDialog, setConfirmDialog] = useState(null);
-
-            const showToast = (message, type = 'success') => {
-                setToast({ message, type });
-                setTimeout(() => setToast(null), 5000);
-            };
-
-            const fetchTickets = async () => {
-                setLoading(true);
-                try {
-                    const res = await fetch('/api/admin/data', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode')})
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        setTickets(data.support_tickets || []);
-                        setError(null);
-                    } else {
-                        setError(data.error || "Failed to load tickets");
-                    }
-                } catch (err) {
-                    setError("Failed to connect to backend: " + err.message);
-                }
-                setLoading(false);
-            };
-
-            useEffect(() => {
-                const interval = setInterval(() => {
-                    if (sessionStorage.getItem('admin-passcode') && !confirmDialog) fetchTickets();
-                }, 10000);
-                window.addEventListener('admin-unlocked', fetchTickets);
-                return () => {
-                    clearInterval(interval);
-                    window.removeEventListener('admin-unlocked', fetchTickets);
-                };
-            }, [confirmDialog]);
-
-            const updateStatus = async (ticketId, newStatus) => {
-                if (newStatus === 'REFUNDED') {
-                    setConfirmDialog({
-                        ticketId,
-                        newStatus,
-                        message: "Are you sure you want to refund this ticket?\n\nThis will instantly return the money to the customer's bank account and CANNOT be undone!"
-                    });
-                    return;
-                }
-                await processStatusUpdate(ticketId, newStatus);
-            };
-
-            const processStatusUpdate = async (ticketId, newStatus) => {
-                try {
-                    const res = await fetch(`/api/super-admin/tickets/${ticketId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: newStatus })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        setTickets(tickets.map(t => t.ticket_id === ticketId ? { ...t, status: newStatus } : t));
-                        if (data.refund_message) {
-                            showToast("Automated Refund:\n" + data.refund_message, 'success');
-                            const passcode = authToken;
-                            if (passcode) {
-                                fetch('/api/super-admin/data', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ passcode })
-                                })
-                                .then(r => r.json())
-                                .then(d => { if(d.success) renderDashboard(d); });
-                            }
-                        } else {
-                            showToast(`Ticket status updated to ${newStatus}`, 'success');
-                        }
-                    } else {
-                        showToast("Failed to update status: " + data.error, 'error');
-                        fetchTickets();
-                    }
-                } catch (err) {
-                    showToast("Error: " + err.message, 'error');
-                    fetchTickets();
-                }
-            };
-
-            const getStatusBadge = (status) => {
-                const base = "px-3 py-1 rounded-full text-xs font-bold border ";
-                switch(status) {
-                    case 'OPEN': return base + 'bg-red-500/20 text-red-400 border-red-500/50';
-                    case 'IN_PROGRESS': return base + 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
-                    case 'RESOLVED': return base + 'bg-green-500/20 text-green-400 border-green-500/50';
-                    case 'REFUNDED': return base + 'bg-blue-500/20 text-blue-400 border-blue-500/50';
-                    default: return base + 'bg-gray-500/20 text-gray-400 border-gray-500/50';
-                }
-            };
-
-            if (error) return <div className="text-red-400 p-4 bg-red-900/20 border border-red-900/50 rounded-lg">Error: {error}</div>;
-
-            return (
-                <div className="glass-card rounded-xl overflow-hidden relative" style={{ minHeight: '400px' }}>
-                    {/* Toast Notification */}
-                    {toast && (
-                        <div className={`absolute top-4 right-4 z-50 p-4 rounded-lg shadow-lg border backdrop-blur-md transition-all flex items-start gap-3 max-w-sm ${toast.type === 'error' ? 'bg-red-500/20 border-red-500/50 text-red-100' : 'bg-green-500/20 border-green-500/50 text-green-100'}`}>
-                            <div className="text-sm whitespace-pre-wrap font-medium">{toast.message}</div>
-                            <button onClick={() => setToast(null)} className="ml-auto opacity-70 hover:opacity-100 text-lg leading-none">&times;</button>
-                        </div>
-                    )}
-                    
-                    {/* Confirm Modal */}
-                    {confirmDialog && (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                            <div className="bg-[#1a1a24] border border-red-500/30 rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
-                                <div className="p-4 border-b border-white/5 bg-red-500/10 flex items-center gap-3">
-                                    <h3 className="text-red-400 font-bold flex items-center gap-2">⚠️ Confirm Critical Action</h3>
-                                </div>
-                                <div className="p-6">
-                                    <p className="text-slate-300 text-sm whitespace-pre-wrap mb-6 leading-relaxed">
-                                        {confirmDialog.message}
-                                    </p>
-                                    <div className="flex gap-3 justify-end">
-                                        <button 
-                                            onClick={() => { setConfirmDialog(null); fetchTickets(); }}
-                                            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button 
-                                            onClick={() => {
-                                                const { ticketId, newStatus } = confirmDialog;
-                                                setConfirmDialog(null);
-                                                processStatusUpdate(ticketId, newStatus);
-                                            }}
-                                            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition shadow-[0_0_15px_rgba(239,68,68,0.3)]"
-                                        >
-                                            Yes, Process Refund
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
-                        <h2 className="text-lg font-bold">Support Center</h2>
-                        <button onClick={fetchTickets} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition border border-white/10 flex items-center gap-2">
-                            <i data-lucide="refresh-cw" className="w-4 h-4"></i>
-                            Refresh Data
-                        </button>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="react-table">
-                            <thead>
-                                <tr>
-                                    <th>Ticket ID</th>
-                                    <th>Status</th>
-                                    <th>User Phone</th>
-                                    <th>Issue Type</th>
-                                    <th>Target Number</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading && tickets.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center py-8 text-slate-500">Loading tickets...</td></tr>
-                                ) : tickets.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center py-8 text-slate-500">No tickets found in database.</td></tr>
-                                ) : tickets.map(ticket => (
-                                    <React.Fragment key={ticket.id}>
-                                        <tr className="cursor-pointer hover:bg-white/5 transition" onClick={() => setExpandedRow(expandedRow === ticket.id ? null : ticket.id)}>
-                                            <td className="font-semibold">{ticket.ticket_id}</td>
-                                            <td>
-                                                <select 
-                                                    value={ticket.status}
-                                                    disabled={ticket.status === 'REFUNDED'}
-                                                    onChange={(e) => { e.stopPropagation(); updateStatus(ticket.ticket_id, e.target.value); }}
-                                                    className={`bg-black/50 border border-white/10 text-white text-xs rounded-lg p-2 outline-none ${ticket.status === 'REFUNDED' ? 'opacity-50 cursor-not-allowed' : 'focus:border-primary'}`}
-                                                >
-                                                    <option value="OPEN">OPEN</option>
-                                                    <option value="IN_PROGRESS">IN PROGRESS</option>
-                                                    <option value="RESOLVED">RESOLVED</option>
-                                                    <option value="REFUNDED">REFUNDED</option>
-                                                </select>
-                                            </td>
-                                            <td>{ticket.user_phone}</td>
-                                            <td className="text-accent">{ticket.issue_type}</td>
-                                            <td>{ticket.target_number || 'N/A'}</td>
-                                            <td>
-                                                <button className="text-primary hover:text-white transition text-sm flex items-center gap-1">
-                                                    {expandedRow === ticket.id ? 'Hide Details' : 'View Details'}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        {expandedRow === ticket.id && (
-                                            <tr className="bg-black/20">
-                                                <td colSpan="6" className="p-6">
-                                                    <div className="grid grid-cols-2 gap-8">
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Description</h4>
-                                                            <p className="text-slate-300 text-sm whitespace-pre-wrap bg-black/40 p-4 rounded-lg border border-white/5">
-                                                                {ticket.description}
-                                                            </p>
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Metadata</h4>
-                                                            <div className="bg-black/40 p-4 rounded-lg border border-white/5 space-y-2 text-sm">
-                                                                <div className="flex justify-between border-b border-white/5 pb-2">
-                                                                    <span className="text-slate-400">Created At:</span>
-                                                                    <span>{new Date(ticket.created_at).toLocaleString()}</span>
-                                                                </div>
-                                                                <div className="flex justify-between border-b border-white/5 pb-2">
-                                                                    <span className="text-slate-400">Database ID:</span>
-                                                                    <span>{ticket.id}</span>
-                                                                </div>
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-slate-400">Current Status:</span>
-                                                                    <span className={getStatusBadge(ticket.status)}>{ticket.status}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </React.Fragment>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            );
-        }
-
-        function UsersDashboard({ users, onAction }) {
-            return (
-                <div className="glass-card rounded-xl p-8 mb-8">
-                    <h2 className="text-xl font-bold mb-6 text-white">User Management</h2>
-                    <table className="data-table w-full text-sm">
-                        <thead>
-                            <tr><th className="text-left">Phone</th><th className="text-left">Status</th><th className="text-left">Device ID</th><th className="text-left">Location</th><th className="text-left">Joined</th><th className="text-left">Actions</th></tr>
-                        </thead>
-                        <tbody>
-                            {users.map((u, i) => (
-                                <tr key={u.id || i}>
-                                    <td className="text-white">{u.phone_number}</td>
-                                    <td><span className={`px-2 py-1 rounded-full text-xs font-bold ${u.status==='ACTIVE'?'bg-green-500/20 text-green-400': u.status==='SUSPENDED'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{u.status}</span></td>
-                                    <td className="text-xs text-slate-400 max-w-[150px] truncate">{u.device_id || 'N/A'}</td>
-                                    <td className="text-white">{u.login_location || 'N/A'}</td>
-                                    <td className="text-slate-400">{new Date(u.created_at).toLocaleString()}</td>
-                                    <td>
-                                        {u.status !== 'SUSPENDED' && <button onClick={() => onAction('suspend', u.phone_number)} className="bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1 rounded-lg mr-2 font-bold transition">Suspend</button>}
-                                        {u.status !== 'VERIFIED' && <button onClick={() => onAction('verify', u.phone_number)} className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/40 px-3 py-1 rounded-lg mr-2 font-bold transition">Verify</button>}
-                                        {u.status !== 'ACTIVE' && <button onClick={() => onAction('reset', u.phone_number)} className="bg-green-500/20 text-green-400 hover:bg-green-500/40 px-3 py-1 rounded-lg font-bold transition">Reset</button>}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            );
-        }
-
-        function RechargesDashboard({ transactions, onRetry }) {
-            return (
-                <div className="glass-card rounded-xl p-8 mb-8">
-                    <h2 className="text-xl font-bold mb-6 text-white">Recharge Management</h2>
-                    <table className="data-table w-full text-sm">
-                        <thead>
-                            <tr><th className="text-left">Order ID</th><th className="text-left">Phone</th><th className="text-left">Amount</th><th className="text-left">Status</th><th className="text-left">Date</th><th className="text-left">Actions</th></tr>
-                        </thead>
-                        <tbody>
-                            {transactions.map((t, i) => (
-                                <tr key={t.id || i}>
-                                    <td className="text-white font-mono">{t.order_id}</td>
-                                    <td className="text-white">{t.user_phone || 'N/A'}</td>
-                                    <td className="text-primary font-bold">₹{t.amount}</td>
-                                    <td><span className={`px-2 py-1 rounded-full text-xs font-bold ${t.status==='SUCCESS' || t.status==='PAID'?'bg-green-500/20 text-green-400': t.status==='failed'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{t.status.toUpperCase()}</span></td>
-                                    <td className="text-slate-400">{new Date(t.created_at).toLocaleString()}</td>
-                                    <td>
-                                        {t.status === 'failed' && <button onClick={() => onRetry(t.order_id)} className="bg-orange-500/20 text-orange-400 hover:bg-orange-500/40 px-3 py-1 rounded-lg font-bold transition">Retry</button>}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            );
-        }
-
-        function FraudDashboard({ fraudAlerts, logins }) {
-            return (
-                <div className="space-y-8">
-                    <div className="glass-card rounded-xl p-8 border-l-4 border-l-red-500">
-                        <h2 className="text-xl font-bold mb-6 text-red-400 flex items-center gap-2">
-                            <i data-lucide="shield-alert" className="w-6 h-6"></i> Fraud Alerts
-                        </h2>
-                        <table className="data-table w-full text-sm">
-                            <thead>
-                                <tr><th className="text-left">Phone</th><th className="text-left">Event Type</th><th className="text-left">Details</th><th className="text-left">IP / Device</th><th className="text-left">Date</th></tr>
-                            </thead>
-                            <tbody>
-                                {fraudAlerts.map((a, i) => (
-                                    <tr key={a.id || i}>
-                                        <td className="text-white font-bold">{a.user_phone}</td>
-                                        <td className="text-red-400 font-bold">{a.event_type}</td>
-                                        <td className="text-white max-w-[200px]">{a.details}</td>
-                                        <td className="text-xs text-slate-400">IP: {a.ip_address}<br/>Dev: <span className="truncate max-w-[100px] inline-block align-bottom">{a.device_id}</span></td>
-                                        <td className="text-slate-400">{new Date(a.created_at).toLocaleString()}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div className="glass-card rounded-xl p-8">
-                        <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
-                            <i data-lucide="history" className="w-6 h-6"></i> Login History
-                        </h2>
-                        <table className="data-table w-full text-sm">
-                            <thead>
-                                <tr><th className="text-left">Phone</th><th className="text-left">IP Address</th><th className="text-left">Location</th><th className="text-left">Success</th><th className="text-left">Date</th></tr>
-                            </thead>
-                            <tbody>
-                                {logins.map((l, i) => (
-                                    <tr key={l.id || i}>
-                                        <td className="text-white">{l.user_phone}</td>
-                                        <td className="text-white">{l.ip_address}</td>
-                                        <td className="text-white">{l.location}</td>
-                                        <td>{l.success ? <span className="text-green-400 font-bold bg-green-500/20 px-2 py-1 rounded-lg">Yes</span> : <span className="text-red-400 font-bold bg-red-500/20 px-2 py-1 rounded-lg">No</span>}</td>
-                                        <td className="text-slate-400">{new Date(l.created_at).toLocaleString()}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            );
-        }
-
-        window.renderAdminReactComponents = (data) => {
-            const handleUserAction = async (action, phone) => {
-                try {
-                    await fetch('/api/admin/users/action', {
-                        method: 'POST',
-                        
-                        headers: {'Content-Type': 'application/json'}, body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), action, phone_number: phone})
-                    });
-                    triggerRefresh(); // Refresh
-                } catch(e) {}
-            };
-            const handleRetry = async (order_id) => {
-                try {
-                    await fetch('/api/admin/recharges/retry', {
-                        method: 'POST',
-                        
-                        headers: {'Content-Type': 'application/json'}, body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), order_id})
-                    });
-                    triggerRefresh(); // Refresh
-                } catch(e) {}
-            };
-
-            const rootUsers = window.reactUsersRoot || ReactDOM.createRoot(document.getElementById('react-users-root'));
-            window.reactUsersRoot = rootUsers;
-            rootUsers.render(<UsersDashboard users={data.users || []} onAction={handleUserAction} />);
-            
-            const rootRecharges = window.reactRechargesRoot || ReactDOM.createRoot(document.getElementById('react-recharges-root'));
-            window.reactRechargesRoot = rootRecharges;
-            rootRecharges.render(<RechargesDashboard transactions={data.transactions || []} onRetry={handleRetry} />);
-
-            const rootFraud = window.reactFraudRoot || ReactDOM.createRoot(document.getElementById('react-fraud-root'));
-            window.reactFraudRoot = rootFraud;
-            rootFraud.render(<FraudDashboard fraudAlerts={data.fraud_alerts || []} logins={data.logins || []} />);
-            
-            // Re-init lucide icons for react rendered content
-            setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100);
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('react-tickets-root'));
-        root.render(<TicketDashboard />);
-    </script>
-
-    <!-- Vanilla JS Logic for existing features -->
     <script>
-        // Init Lucide Icons
-        lucide.createIcons();
+        // Tab Navigation Logic
+        const navBtns = document.querySelectorAll('.nav-btn[data-target]');
+        const tabSections = document.querySelectorAll('.tab-section');
 
-
-        let authToken = sessionStorage.getItem('admin-passcode');
-        
-        async function handleLogin() {
-            const passcode = document.getElementById('login-passcode').value;
-            if (!passcode) return;
-            try {
-                const res = await fetch('/api/admin/data', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ passcode })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    authToken = passcode;
-                    sessionStorage.setItem('admin-passcode', passcode);
-                    document.getElementById('login-overlay').classList.add('hidden');
-                    document.getElementById('dashboard-content').classList.remove('hidden');
-                    
-                    renderDashboard(data);
-                    window.dispatchEvent(new Event('admin-unlocked'));
-                } else {
-                    document.getElementById('login-error').innerText = 'Invalid Passcode';
-                    document.getElementById('login-error').classList.remove('hidden');
-                }
-            } catch (e) {
-                document.getElementById('login-error').innerText = 'Network error: Is server running?';
-                document.getElementById('login-error').classList.remove('hidden');
-            }
-        }
-
-
-        function triggerRefresh() {
-            if(authToken) {
-                fetch('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passcode: authToken })})
-                .then(r => r.json())
-                .then(d => { if(d.success) renderDashboard(d); });
-            }
-        }
-    
-        // Tab Switching Logic
-        const tabs = document.querySelectorAll('.sidebar-item[data-tab]');
-        const contents = document.querySelectorAll('.tab-content');
-        const pageTitle = document.getElementById('page-title');
-
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                // Remove active class from all
-                tabs.forEach(t => t.classList.remove('active'));
-                contents.forEach(c => c.classList.remove('active'));
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                navBtns.forEach(b => b.classList.remove('active'));
+                tabSections.forEach(s => s.classList.remove('active'));
                 
-                // Add active to clicked
-                tab.classList.add('active');
-                const targetId = tab.getAttribute('data-tab');
-                document.getElementById(targetId).classList.add('active');
-                
-                // Update title
-                pageTitle.innerText = tab.querySelector('span').innerText;
+                btn.classList.add('active');
+                document.getElementById(btn.getAttribute('data-target')).classList.add('active');
             });
         });
 
+        // Authentication & Main Data Load
+        let gPasscode = '';
         
-        
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const passcode = document.getElementById('admin-passcode').value;
+            fetch('/api/admin/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ passcode })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    gPasscode = passcode;
+                    sessionStorage.setItem('admin-passcode', passcode);
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('dashboard-content').classList.remove('hidden');
+                    renderDashboard(data);
+                    loadTickets();
+                } else {
+                    document.getElementById('login-error').style.display = 'block';
+                }
+            })
+            .catch(err => {
+                document.getElementById('login-error').innerText = "Network Error";
+                document.getElementById('login-error').style.display = 'block';
+            });
+        });
+
         document.getElementById('logout-btn').addEventListener('click', () => {
             sessionStorage.removeItem('admin-passcode');
-            authToken = null;
+            gPasscode = '';
+            document.getElementById('admin-passcode').value = '';
             document.getElementById('dashboard-content').classList.add('hidden');
-            document.getElementById('login-overlay').classList.remove('hidden');
-            document.getElementById('login-passcode').value = '';
+            document.getElementById('login-overlay').style.display = 'flex';
         });
-    
 
         function renderDashboard(data) {
-            if (data.assistant_name) {
-                document.getElementById('admin-assistant-name').value = data.assistant_name;
-            }
             let totalRevenue = 0;
-            let totalRefunded = 0;
             let successCount = 0;
             const txBody = document.getElementById('tx-table-body');
             txBody.innerHTML = '';
@@ -860,173 +259,130 @@
                 if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') {
                     totalRevenue += tx.amount;
                     successCount++;
-                } else if (tx.status.toLowerCase() === 'refunded') {
-                    totalRefunded += tx.amount;
                 }
-                
                 let statusClass = 'pending';
                 if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') statusClass = 'success';
-                else if (tx.status.toLowerCase() === 'failed') statusClass = 'failed';
-                else if (tx.status.toLowerCase() === 'refunded') statusClass = 'failed'; // reuse failed class for red
+                else if (tx.status.toLowerCase() === 'failed' || tx.status.toLowerCase() === 'refunded') statusClass = 'failed';
 
                 txBody.innerHTML += `
                     <tr>
                         <td>${tx.order_id}</td>
                         <td>${tx.user_identifier}</td>
-                        <td class="font-bold text-primary">₹${tx.amount.toFixed(2)}</td>
+                        <td style="color: var(--primary-color); font-weight: bold;">₹${tx.amount.toFixed(2)}</td>
                         <td><span class="badge ${statusClass}">${tx.status.toUpperCase()}</span></td>
-                        <td class="text-slate-400 text-sm">${new Date(tx.created_at).toLocaleString()}</td>
+                        <td style="color: var(--text-muted);">${new Date(tx.created_at).toLocaleString()}</td>
                     </tr>
                 `;
             });
 
             document.getElementById('metric-revenue').innerText = '₹' + totalRevenue.toLocaleString();
-            document.getElementById('metric-refunded').innerText = '₹' + totalRefunded.toLocaleString();
             document.getElementById('metric-tx-count').innerText = successCount;
             document.getElementById('metric-plans-count').innerText = data.purchases.length;
-
-            if (data.analytics) {
-                document.getElementById('funnel-visits').innerText = data.analytics.page_view || 0;
-                document.getElementById('funnel-entered').innerText = data.analytics.entered_number || 0;
-                document.getElementById('funnel-logged').innerText = data.analytics.logged_in || 0;
-                document.getElementById('funnel-checkout').innerText = data.analytics.checkout_started || 0;
-                document.getElementById('funnel-purchased').innerText = data.analytics.purchase_success || successCount;
-            }
 
             const pBody = document.getElementById('purchases-table-body');
             pBody.innerHTML = '';
             data.purchases.forEach(p => {
                 pBody.innerHTML += `
                     <tr>
-                        <td class="font-semibold">${p.user_identifier}</td>
+                        <td style="font-weight: 600;">${p.user_identifier}</td>
                         <td>${p.brand_name}</td>
                         <td><span class="badge" style="background: rgba(255,255,255,0.1); color: white;">${p.flow_type.toUpperCase()}</span></td>
-                        <td class="text-slate-400 text-sm">${new Date(p.created_at).toLocaleString()}</td>
+                        <td style="color: var(--text-muted);">${new Date(p.created_at).toLocaleString()}</td>
                     </tr>
                 `;
             });
 
-            if (data.analytics && data.analytics.leads) {
-                const leadsBody = document.getElementById('leads-table-body');
-                leadsBody.innerHTML = '';
-                if (data.analytics.leads.length === 0) {
-                    leadsBody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500">No leads captured yet.</td></tr>';
-                } else {
-                    data.analytics.leads.forEach(lead => {
-                        let stageClass = 'text-slate-400';
-                        if (lead.stage === 'Purchased') stageClass = 'text-green-400 font-bold';
-                        else if (lead.stage === 'Started Checkout') stageClass = 'text-accent';
-                        else if (lead.stage === 'Verified OTP') stageClass = 'text-yellow-400';
-                        
-                        leadsBody.innerHTML += `
-                            <tr class="hover:bg-white/5 transition">
-                                <td class="font-bold text-white">
-                                    ${lead.contact || 'No Phone'}
-                                    ${lead.email ? `<br><span class="text-xs text-slate-400 font-normal mt-1 block"><i data-lucide="mail" class="w-3 h-3 inline"></i> ${lead.email}</span>` : ''}
-                                </td>
-                                <td class="${stageClass}">${lead.stage}</td>
-                                <td class="text-slate-400 text-sm">${new Date(lead.last_active).toLocaleString()}</td>
-                                <td>
-                                    ${lead.contact ? `<a href="https://wa.me/${lead.contact.replace('+','')}" target="_blank" class="px-3 py-1 bg-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/30 border border-[#25D366]/50 rounded text-xs font-bold transition flex items-center gap-1 w-max mb-1">
-                                        <i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp
-                                    </a>` : ''}
-                                    ${lead.email ? `<a href="mailto:${lead.email}" target="_blank" class="px-3 py-1 bg-[#00BFFF]/20 text-[#00BFFF] hover:bg-[#00BFFF]/30 border border-[#00BFFF]/50 rounded text-xs font-bold transition flex items-center gap-1 w-max">
-                                        <i data-lucide="mail" class="w-3 h-3"></i> Email
-                                    </a>` : ''}
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    lucide.createIcons();
+            // Render Analytics
+            if (data.analytics) {
+                document.getElementById('funnel-visits').innerText = data.analytics.page_view || 0;
+                document.getElementById('funnel-entered').innerText = data.analytics.entered_number || 0;
+                document.getElementById('funnel-logged').innerText = data.analytics.logged_in || 0;
+                document.getElementById('funnel-checkout').innerText = data.analytics.checkout_started || 0;
+                document.getElementById('funnel-purchased').innerText = data.analytics.purchase_success || successCount;
+
+                if (data.analytics.leads) {
+                    const leadsBody = document.getElementById('leads-table-body');
+                    leadsBody.innerHTML = '';
+                    if (data.analytics.leads.length === 0) {
+                        leadsBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No leads captured yet.</td></tr>';
+                    } else {
+                        data.analytics.leads.forEach(lead => {
+                            leadsBody.innerHTML += `
+                                <tr>
+                                    <td style="font-weight: bold; color: white;">${lead.contact}<br><span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">${lead.email || ''}</span></td>
+                                    <td style="color: var(--accent);">${lead.stage}</td>
+                                    <td style="color: var(--text-muted);">${new Date(lead.last_active).toLocaleString()}</td>
+                                </tr>
+                            `;
+                        });
+                    }
                 }
-            } // Added missing closing brace
-            
-            if (data.business_metrics) {
-                const bm = data.business_metrics;
-                document.getElementById('biz-rev-today').innerText = '₹' + bm.revenue.today.toLocaleString();
-                document.getElementById('biz-rev-monthly').innerText = '₹' + bm.revenue.monthly.toLocaleString();
-                document.getElementById('biz-rev-total').innerText = '₹' + bm.revenue.total.toLocaleString();
-                
-                document.getElementById('biz-rec-count').innerText = bm.recharge.total_count.toLocaleString();
-                document.getElementById('biz-rec-success').innerText = bm.recharge.success_pct + '%';
-                document.getElementById('biz-rec-fail').innerText = bm.recharge.failure_pct + '%';
-                document.getElementById('biz-rec-pend').innerText = bm.recharge.pending_pct + '%';
-                
-                document.getElementById('biz-user-new').innerText = bm.users.new_today.toLocaleString();
-                document.getElementById('biz-user-active').innerText = bm.users.active.toLocaleString();
-                document.getElementById('biz-user-return').innerText = bm.users.returning.toLocaleString();
-                
-                document.getElementById('biz-op-top').innerText = bm.operators.top_operator || 'N/A';
-                document.getElementById('biz-op-plan').innerText = bm.operators.top_plan || 'N/A';
-                document.getElementById('biz-op-profit').innerText = bm.operators.most_profitable || 'N/A';
-            }
-            
-            if (data.marketing_data) {
-                const md = data.marketing_data;
-                document.getElementById('mkt-popular-plan-desc').innerText = md.popular_plan.desc;
-                document.getElementById('mkt-popular-plan-count').innerText = md.popular_plan.count.toLocaleString();
-                
-                const amountsList = document.getElementById('mkt-amounts-list');
-                amountsList.innerHTML = '';
-                md.top_amounts.forEach(a => {
-                    amountsList.innerHTML += `
-                        <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                            <h4 class="text-white font-bold">₹${a.amount}</h4>
-                            <div class="text-sm text-slate-400">${a.count} recharges</div>
-                        </div>
-                    `;
-                });
-                
-                const operatorList = document.getElementById('mkt-operator-list');
-                operatorList.innerHTML = '';
-                md.operator_share.forEach(o => {
-                    operatorList.innerHTML += `
-                        <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                            <h4 class="text-white font-bold">${o.operator}</h4>
-                            <div class="text-sm text-slate-400">${o.count} recharges</div>
-                        </div>
-                    `;
-                });
-                
-                const acqList = document.getElementById('mkt-acquisition-list');
-                acqList.innerHTML = '';
-                md.acquisition.forEach(ac => {
-                    acqList.innerHTML += `
-                        <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                            <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">${ac.source}</h4>
-                            <div class="text-2xl font-bold text-white">${ac.count}</div>
-                        </div>
-                    `;
-                });
-            }
-            
-            if (window.renderAdminReactComponents) {
-                window.renderAdminReactComponents(data);
             }
         }
 
-        document.getElementById('save-assistant-name').addEventListener('click', () => {
-            const newName = document.getElementById('admin-assistant-name').value.trim();
-            if (!newName) return;
+        // Support Tickets Logic
+        document.getElementById('refresh-tickets-btn').addEventListener('click', loadTickets);
 
-            const passcode = authToken;
-            fetch('/api/super-admin/config', {
-                method: 'POST',
-                
-                body: JSON.stringify({ passcode: passcode, assistant_name: newName })
+        function loadTickets() {
+            if (!gPasscode) return;
+            fetch('/api/support/tickets')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('tickets-table-body');
+                tbody.innerHTML = '';
+                if(data.success && data.tickets) {
+                    if(data.tickets.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No tickets found.</td></tr>';
+                        return;
+                    }
+                    data.tickets.forEach(ticket => {
+                        const statusClass = ticket.status === 'OPEN' ? 'failed' : ticket.status === 'RESOLVED' ? 'success' : 'pending';
+                        const selectHtml = `
+                            <select onchange="updateTicketStatus(${ticket.ticket_id}, this.value)" style="background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px;" ${ticket.status === 'REFUNDED' ? 'disabled' : ''}>
+                                <option value="OPEN" ${ticket.status === 'OPEN' ? 'selected' : ''}>OPEN</option>
+                                <option value="IN_PROGRESS" ${ticket.status === 'IN_PROGRESS' ? 'selected' : ''}>IN PROGRESS</option>
+                                <option value="RESOLVED" ${ticket.status === 'RESOLVED' ? 'selected' : ''}>RESOLVED</option>
+                                <option value="REFUNDED" ${ticket.status === 'REFUNDED' ? 'selected' : ''}>REFUNDED</option>
+                            </select>
+                        `;
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${ticket.ticket_id}</td>
+                                <td>${selectHtml}</td>
+                                <td>${ticket.user_phone}</td>
+                                <td style="color: var(--accent);">${ticket.issue_type}</td>
+                                <td>${ticket.target_number || '-'}</td>
+                                <td><button onclick="alert('Description:\\n${ticket.description.replace(/"/g, '&quot;')}')" class="nav-btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">View</button></td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+        }
+
+        window.updateTicketStatus = function(ticketId, newStatus) {
+            if (newStatus === 'REFUNDED') {
+                if(!confirm("Are you sure you want to refund this ticket? This cannot be undone!")) {
+                    loadTickets();
+                    return;
+                }
+            }
+            fetch(\`/api/support/tickets/\${ticketId}\`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
             })
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
-                    const msg = document.getElementById('save-settings-msg');
-                    msg.classList.remove('hidden');
-                    setTimeout(() => msg.classList.add('hidden'), 3000);
+                    if(data.refund_message) alert("Refund Processed: " + data.refund_message);
+                    loadTickets();
                 } else {
-                    alert('Error saving name: ' + data.error);
+                    alert("Error: " + data.error);
+                    loadTickets();
                 }
-            })
-            .catch(err => console.error(err));
-        });
+            });
+        };
     </script>
 </body>
 </html>
