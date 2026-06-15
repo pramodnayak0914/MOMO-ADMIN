@@ -337,6 +337,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     "users": users_list,
                     "logins": logins_list,
                     "fraud_alerts": fraud_list,
+                    "marketing_data": marketing_data,
+                    "growth_rules": growth_rules,
                     "business_metrics": business_metrics,
                     "marketing_data": marketing_data
                 })
@@ -389,6 +391,27 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     conn = psycopg2.connect(DATABASE_URL)
                     cur = conn.cursor()
                     cur.execute("UPDATE transactions SET status = 'PENDING' WHERE order_id = %s", (order_id,))
+                    conn.commit()
+                    conn.close()
+                self._send_json(200, {"success": True})
+            except Exception as e:
+                self._send_json(500, {"error": str(e)})
+            return
+        elif self.path == '/api/admin/growth/save':
+            content_length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(content_length))
+            if data.get('passcode') != ADMIN_PASSCODE: return self._send_json(401, {"error": "Unauthorized"})
+            try:
+                if DATABASE_URL and psycopg2:
+                    conn = psycopg2.connect(DATABASE_URL)
+                    cur = conn.cursor()
+                    ref_rules = json.dumps(data.get('referral_rules', {}))
+                    cb_rules = json.dumps(data.get('cashback_rules', {}))
+                    loy_rules = json.dumps(data.get('loyalty_rules', {}))
+                    
+                    cur.execute("INSERT INTO app_config (key, value) VALUES ('referral_rules', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (ref_rules,))
+                    cur.execute("INSERT INTO app_config (key, value) VALUES ('cashback_rules', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (cb_rules,))
+                    cur.execute("INSERT INTO app_config (key, value) VALUES ('loyalty_rules', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (loy_rules,))
                     conn.commit()
                     conn.close()
                 self._send_json(200, {"success": True})
