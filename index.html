@@ -236,7 +236,8 @@
                 }
             })
             .catch(err => {
-                document.getElementById('login-error').innerText = "Network Error";
+                console.error("Login Error:", err);
+                document.getElementById('login-error').innerText = "Dashboard Error: " + err.message;
                 document.getElementById('login-error').style.display = 'block';
             });
         });
@@ -256,13 +257,14 @@
             txBody.innerHTML = '';
 
             data.transactions.forEach(tx => {
-                if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') {
+                const statusStr = (tx.status || 'pending').toLowerCase();
+                if (statusStr === 'success' || statusStr === 'paid') {
                     totalRevenue += tx.amount;
                     successCount++;
                 }
                 let statusClass = 'pending';
-                if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') statusClass = 'success';
-                else if (tx.status.toLowerCase() === 'failed' || tx.status.toLowerCase() === 'refunded') statusClass = 'failed';
+                if (statusStr === 'success' || statusStr === 'paid') statusClass = 'success';
+                else if (statusStr === 'failed' || statusStr === 'refunded') statusClass = 'failed';
 
                 txBody.innerHTML += `
                     <tr>
@@ -286,7 +288,7 @@
                     <tr>
                         <td style="font-weight: 600;">${p.user_identifier}</td>
                         <td>${p.brand_name}</td>
-                        <td><span class="badge" style="background: rgba(255,255,255,0.1); color: white;">${p.flow_type.toUpperCase()}</span></td>
+                        <td><span class="badge" style="background: rgba(255,255,255,0.1); color: white;">${(p.flow_type || 'N/A').toUpperCase()}</span></td>
                         <td style="color: var(--text-muted);">${new Date(p.created_at).toLocaleString()}</td>
                     </tr>
                 `;
@@ -352,7 +354,7 @@
                                 <td>${ticket.user_phone}</td>
                                 <td style="color: var(--accent);">${ticket.issue_type}</td>
                                 <td>${ticket.target_number || '-'}</td>
-                                <td><button onclick="alert('Description:\\n${ticket.description.replace(/"/g, '&quot;')}')" class="nav-btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">View</button></td>
+                                <td><button onclick="alert('Description:\\n${(ticket.description || 'No description').replace(/\"/g, '&quot;')}')" class="nav-btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">View</button></td>
                             </tr>
                         `;
                     });
