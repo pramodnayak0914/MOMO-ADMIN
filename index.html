@@ -96,12 +96,11 @@
                 </div>
             </div>
             <h2 class="text-3xl font-bold text-white mb-2">Portal Access</h2>
-            <p class="text-slate-400 mb-8">Please sign in to continue</p>
+            <p class="text-slate-400 mb-8">Please enter your passcode to continue</p>
             <div class="space-y-4">
-                <input type="email" id="login-email" placeholder="Email Address" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none">
-                <input type="password" id="login-password" placeholder="Password" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none">
-                <button onclick="handleLogin()" class="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all">Sign In</button>
-                <div id="login-error" class="text-red-400 text-sm mt-2 hidden">Invalid credentials</div>
+                <input type="password" id="login-passcode" placeholder="Passcode" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none" onkeypress="if(event.key === 'Enter') handleLogin()">
+                <button onclick="handleLogin()" class="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all">Unlock Dashboard</button>
+                <div id="login-error" class="text-red-400 text-sm mt-2 hidden">Invalid Passcode</div>
             </div>
         </div>
     </div>
@@ -399,10 +398,14 @@
             const fetchTickets = async () => {
                 setLoading(true);
                 try {
-                    const res = await fetch('/api/super-admin/tickets', {headers: {'Content-Type': 'application/json'}`}}));
+                    const res = await fetch('/api/admin/data', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode')})
+                    });
                     const data = await res.json();
                     if (data.success) {
-                        setTickets(data.tickets || []);
+                        setTickets(data.support_tickets || []);
                         setError(null);
                     } else {
                         setError(data.error || "Failed to load tickets");
@@ -415,7 +418,7 @@
 
             useEffect(() => {
                 const interval = setInterval(() => {
-                    if (authToken && !confirmDialog) fetchTickets();
+                    if (sessionStorage.getItem('admin-passcode') && !confirmDialog) fetchTickets();
                 }, 10000);
                 window.addEventListener('admin-unlocked', fetchTickets);
                 return () => {
@@ -441,7 +444,7 @@
                     const res = await fetch(`/api/super-admin/tickets/${ticketId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'),  status: newStatus })
+                        body: JSON.stringify({ status: newStatus })
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -453,7 +456,7 @@
                                 fetch('/api/super-admin/data', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'),  passcode })
+                                    body: JSON.stringify({ passcode })
                                 })
                                 .then(r => r.json())
                                 .then(d => { if(d.success) renderDashboard(d); });
@@ -727,20 +730,20 @@
         window.renderAdminReactComponents = (data) => {
             const handleUserAction = async (action, phone) => {
                 try {
-                    await fetch('/api/super-admin/users/action', {
+                    await fetch('/api/admin/users/action', {
                         method: 'POST',
                         
-                        headers: {'Content-Type': 'application/json'}`, 'Content-Type': 'application/json'}, body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), action, phone_number: phone})
+                        headers: {'Content-Type': 'application/json'}, body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), action, phone_number: phone})
                     });
                     triggerRefresh(); // Refresh
                 } catch(e) {}
             };
             const handleRetry = async (order_id) => {
                 try {
-                    await fetch('/api/super-admin/recharges/retry', {
+                    await fetch('/api/admin/recharges/retry', {
                         method: 'POST',
                         
-                        headers: {'Content-Type': 'application/json'}`, 'Content-Type': 'application/json'}, body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), order_id})
+                        headers: {'Content-Type': 'application/json'}, body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), order_id})
                     });
                     triggerRefresh(); // Refresh
                 } catch(e) {}
@@ -772,38 +775,28 @@
         lucide.createIcons();
 
 
-        let authToken = sessionStorage.getItem('adminToken');
+        let authToken = sessionStorage.getItem('admin-passcode');
         
         async function handleLogin() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+            const passcode = document.getElementById('login-passcode').value;
+            if (!passcode) return;
             try {
-                const res = await fetch('/api/auth/login', {
+                const res = await fetch('/api/admin/data', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'),  email, password })
+                    body: JSON.stringify({ passcode })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    authToken = data.token;
-                    sessionStorage.setItem('adminToken', data.token);
+                    authToken = passcode;
+                    sessionStorage.setItem('admin-passcode', passcode);
                     document.getElementById('login-overlay').classList.add('hidden');
                     document.getElementById('dashboard-content').classList.remove('hidden');
                     
-                    // Fetch data
-                    fetch('/api/super-admin/data', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'}` }
-                    })
-                    .then(r => r.json())
-                    .then(d => {
-                        if(d.success) {
-                            renderDashboard(d);
-                            window.dispatchEvent(new Event('admin-unlocked'));
-                        }
-                    });
+                    renderDashboard(data);
+                    window.dispatchEvent(new Event('admin-unlocked'));
                 } else {
-                    document.getElementById('login-error').innerText = data.error;
+                    document.getElementById('login-error').innerText = 'Invalid Passcode';
                     document.getElementById('login-error').classList.remove('hidden');
                 }
             } catch (e) {
@@ -815,7 +808,7 @@
 
         function triggerRefresh() {
             if(authToken) {
-                fetch('/api/super-admin/data', { method: 'POST', headers: {'Content-Type': 'application/json'}` }})
+                fetch('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passcode: authToken })})
                 .then(r => r.json())
                 .then(d => { if(d.success) renderDashboard(d); });
             }
@@ -845,12 +838,11 @@
         
         
         document.getElementById('logout-btn').addEventListener('click', () => {
-            sessionStorage.removeItem('adminToken');
+            sessionStorage.removeItem('admin-passcode');
             authToken = null;
             document.getElementById('dashboard-content').classList.add('hidden');
             document.getElementById('login-overlay').classList.remove('hidden');
-            document.getElementById('login-email').value = '';
-            document.getElementById('login-password').value = '';
+            document.getElementById('login-passcode').value = '';
         });
     
 
@@ -1021,7 +1013,7 @@
             fetch('/api/super-admin/config', {
                 method: 'POST',
                 
-                body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'),  passcode: passcode, assistant_name: newName })
+                body: JSON.stringify({ passcode: passcode, assistant_name: newName })
             })
             .then(res => res.json())
             .then(data => {
