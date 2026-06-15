@@ -116,14 +116,6 @@
                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                     <span>Overview</span>
                 </div>
-                <div class="sidebar-item" data-tab="tab-business">
-                    <i data-lucide="briefcase" class="w-5 h-5"></i>
-                    <span>Business Analytics</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-marketing">
-                    <i data-lucide="trending-up" class="w-5 h-5"></i>
-                    <span>Marketing Data</span>
-                </div>
                 <div class="sidebar-item" data-tab="tab-analytics">
                     <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
                     <span>Analytics Funnel</span>
@@ -131,18 +123,6 @@
                 <div class="sidebar-item" data-tab="tab-support">
                     <i data-lucide="headphones" class="w-5 h-5"></i>
                     <span>Support Tickets</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-users">
-                    <i data-lucide="users" class="w-5 h-5"></i>
-                    <span>User Management</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-recharges">
-                    <i data-lucide="smartphone" class="w-5 h-5"></i>
-                    <span>Recharge Management</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-fraud">
-                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
-                    <span>Fraud Controls</span>
                 </div>
                 <div class="sidebar-item" data-tab="tab-settings">
                     <i data-lucide="settings" class="w-5 h-5"></i>
@@ -233,143 +213,6 @@
                 </div>
             </div>
 
-            <!-- TAB BUSINESS ANALYTICS -->
-            <div id="tab-business" class="tab-content">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <!-- Revenue -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="indian-rupee" class="w-6 h-6 text-primary"></i> Revenue
-                        </h2>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Today</h4>
-                                <div id="biz-rev-today" class="text-2xl font-bold text-white">₹0</div>
-                            </div>
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Monthly</h4>
-                                <div id="biz-rev-monthly" class="text-2xl font-bold text-primary">₹0</div>
-                            </div>
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Total</h4>
-                                <div id="biz-rev-total" class="text-2xl font-bold text-accent">₹0</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Recharge -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="smartphone" class="w-6 h-6 text-primary"></i> Recharge
-                        </h2>
-                        <div class="flex items-center justify-between mb-4">
-                            <h4 class="text-slate-400 text-sm">Total Count</h4>
-                            <div id="biz-rec-count" class="text-2xl font-bold text-white">0</div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <div class="bg-green-500/10 p-3 rounded-lg border border-green-500/20 text-center">
-                                <h4 class="text-green-400 text-xs uppercase tracking-wider mb-1">Success</h4>
-                                <div id="biz-rec-success" class="text-lg font-bold text-green-400">0%</div>
-                            </div>
-                            <div class="bg-red-500/10 p-3 rounded-lg border border-red-500/20 text-center">
-                                <h4 class="text-red-400 text-xs uppercase tracking-wider mb-1">Failure</h4>
-                                <div id="biz-rec-fail" class="text-lg font-bold text-red-400">0%</div>
-                            </div>
-                            <div class="bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/20 text-center">
-                                <h4 class="text-yellow-400 text-xs uppercase tracking-wider mb-1">Pending</h4>
-                                <div id="biz-rec-pend" class="text-lg font-bold text-yellow-400">0%</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Users -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="users" class="w-6 h-6 text-primary"></i> Users
-                        </h2>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">New Today</h4>
-                                <div id="biz-user-new" class="text-2xl font-bold text-white">0</div>
-                            </div>
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Active</h4>
-                                <div id="biz-user-active" class="text-2xl font-bold text-primary">0</div>
-                            </div>
-                            <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">Returning</h4>
-                                <div id="biz-user-return" class="text-2xl font-bold text-accent">0</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Operators -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="bar-chart-2" class="w-6 h-6 text-primary"></i> Operators
-                        </h2>
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                                <h4 class="text-slate-400 text-sm">Top Operator</h4>
-                                <div id="biz-op-top" class="text-md font-bold text-white">N/A</div>
-                            </div>
-                            <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                                <h4 class="text-slate-400 text-sm">Top Recharge Plan</h4>
-                                <div id="biz-op-plan" class="text-md font-bold text-primary">N/A</div>
-                            </div>
-                            <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                                <h4 class="text-slate-400 text-sm">Most Profitable</h4>
-                                <div id="biz-op-profit" class="text-md font-bold text-accent">N/A</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB MARKETING DATA -->
-            <div id="tab-marketing" class="tab-content">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <!-- Popular Plan -->
-                    <div class="glass-card rounded-xl p-8 col-span-1 md:col-span-2 bg-gradient-to-r from-primary/20 to-transparent border border-primary/30">
-                        <h2 class="text-xl font-bold mb-2 flex items-center gap-2">
-                            <i data-lucide="star" class="w-6 h-6 text-yellow-400"></i> Most Popular Plan
-                        </h2>
-                        <div class="text-3xl font-bold text-white mb-2" id="mkt-popular-plan-desc">Loading...</div>
-                        <p class="text-slate-400 text-lg">Recharged by <span id="mkt-popular-plan-count" class="text-accent font-bold">0</span> users</p>
-                    </div>
-
-                    <!-- Most Recharged Amounts -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="indian-rupee" class="w-6 h-6 text-green-400"></i> Top Recharged Amounts
-                        </h2>
-                        <div id="mkt-amounts-list" class="space-y-3">
-                            <!-- Injected by JS -->
-                        </div>
-                    </div>
-
-                    <!-- Operator Popularity -->
-                    <div class="glass-card rounded-xl p-8">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="pie-chart" class="w-6 h-6 text-blue-400"></i> Operator Popularity
-                        </h2>
-                        <div id="mkt-operator-list" class="space-y-3">
-                            <!-- Injected by JS -->
-                        </div>
-                    </div>
-                    
-                    <!-- Acquisition Source -->
-                    <div class="glass-card rounded-xl p-8 md:col-span-2">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="globe" class="w-6 h-6 text-purple-400"></i> User Acquisition Source
-                        </h2>
-                        <div class="grid grid-cols-3 gap-4" id="mkt-acquisition-list">
-                            <!-- Injected by JS -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- TAB 2: ANALYTICS -->
             <div id="tab-analytics" class="tab-content">
                 <div class="glass-card rounded-xl p-8 mb-8">
@@ -424,21 +267,6 @@
             <!-- TAB 3: SUPPORT -->
             <div id="tab-support" class="tab-content">
                 <div id="react-tickets-root"></div>
-            </div>
-
-            <!-- TAB: USERS -->
-            <div id="tab-users" class="tab-content">
-                <div id="react-users-root"></div>
-            </div>
-
-            <!-- TAB: RECHARGES -->
-            <div id="tab-recharges" class="tab-content">
-                <div id="react-recharges-root"></div>
-            </div>
-
-            <!-- TAB: FRAUD -->
-            <div id="tab-fraud" class="tab-content">
-                <div id="react-fraud-root"></div>
             </div>
 
             <!-- TAB 4: SETTINGS -->
@@ -703,149 +531,6 @@
             );
         }
 
-        function UsersDashboard({ users, onAction }) {
-            return (
-                <div className="glass-card rounded-xl p-8 mb-8">
-                    <h2 className="text-xl font-bold mb-6 text-white">User Management</h2>
-                    <table className="data-table w-full text-sm">
-                        <thead>
-                            <tr><th className="text-left">Phone</th><th className="text-left">Status</th><th className="text-left">Device ID</th><th className="text-left">Location</th><th className="text-left">Joined</th><th className="text-left">Actions</th></tr>
-                        </thead>
-                        <tbody>
-                            {users.map((u, i) => (
-                                <tr key={u.id || i}>
-                                    <td className="text-white">{u.phone_number}</td>
-                                    <td><span className={`px-2 py-1 rounded-full text-xs font-bold ${u.status==='ACTIVE'?'bg-green-500/20 text-green-400': u.status==='SUSPENDED'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{u.status}</span></td>
-                                    <td className="text-xs text-slate-400 max-w-[150px] truncate">{u.device_id || 'N/A'}</td>
-                                    <td className="text-white">{u.login_location || 'N/A'}</td>
-                                    <td className="text-slate-400">{new Date(u.created_at).toLocaleString()}</td>
-                                    <td>
-                                        {u.status !== 'SUSPENDED' && <button onClick={() => onAction('suspend', u.phone_number)} className="bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1 rounded-lg mr-2 font-bold transition">Suspend</button>}
-                                        {u.status !== 'VERIFIED' && <button onClick={() => onAction('verify', u.phone_number)} className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/40 px-3 py-1 rounded-lg mr-2 font-bold transition">Verify</button>}
-                                        {u.status !== 'ACTIVE' && <button onClick={() => onAction('reset', u.phone_number)} className="bg-green-500/20 text-green-400 hover:bg-green-500/40 px-3 py-1 rounded-lg font-bold transition">Reset</button>}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            );
-        }
-
-        function RechargesDashboard({ transactions, onRetry }) {
-            return (
-                <div className="glass-card rounded-xl p-8 mb-8">
-                    <h2 className="text-xl font-bold mb-6 text-white">Recharge Management</h2>
-                    <table className="data-table w-full text-sm">
-                        <thead>
-                            <tr><th className="text-left">Order ID</th><th className="text-left">Phone</th><th className="text-left">Amount</th><th className="text-left">Status</th><th className="text-left">Date</th><th className="text-left">Actions</th></tr>
-                        </thead>
-                        <tbody>
-                            {transactions.map((t, i) => (
-                                <tr key={t.id || i}>
-                                    <td className="text-white font-mono">{t.order_id}</td>
-                                    <td className="text-white">{t.user_phone || 'N/A'}</td>
-                                    <td className="text-primary font-bold">₹{t.amount}</td>
-                                    <td><span className={`px-2 py-1 rounded-full text-xs font-bold ${t.status==='SUCCESS' || t.status==='PAID'?'bg-green-500/20 text-green-400': t.status==='failed'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{t.status.toUpperCase()}</span></td>
-                                    <td className="text-slate-400">{new Date(t.created_at).toLocaleString()}</td>
-                                    <td>
-                                        {t.status === 'failed' && <button onClick={() => onRetry(t.order_id)} className="bg-orange-500/20 text-orange-400 hover:bg-orange-500/40 px-3 py-1 rounded-lg font-bold transition">Retry</button>}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            );
-        }
-
-        function FraudDashboard({ fraudAlerts, logins }) {
-            return (
-                <div className="space-y-8">
-                    <div className="glass-card rounded-xl p-8 border-l-4 border-l-red-500">
-                        <h2 className="text-xl font-bold mb-6 text-red-400 flex items-center gap-2">
-                            <i data-lucide="shield-alert" className="w-6 h-6"></i> Fraud Alerts
-                        </h2>
-                        <table className="data-table w-full text-sm">
-                            <thead>
-                                <tr><th className="text-left">Phone</th><th className="text-left">Event Type</th><th className="text-left">Details</th><th className="text-left">IP / Device</th><th className="text-left">Date</th></tr>
-                            </thead>
-                            <tbody>
-                                {fraudAlerts.map((a, i) => (
-                                    <tr key={a.id || i}>
-                                        <td className="text-white font-bold">{a.user_phone}</td>
-                                        <td className="text-red-400 font-bold">{a.event_type}</td>
-                                        <td className="text-white max-w-[200px]">{a.details}</td>
-                                        <td className="text-xs text-slate-400">IP: {a.ip_address}<br/>Dev: <span className="truncate max-w-[100px] inline-block align-bottom">{a.device_id}</span></td>
-                                        <td className="text-slate-400">{new Date(a.created_at).toLocaleString()}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div className="glass-card rounded-xl p-8">
-                        <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
-                            <i data-lucide="history" className="w-6 h-6"></i> Login History
-                        </h2>
-                        <table className="data-table w-full text-sm">
-                            <thead>
-                                <tr><th className="text-left">Phone</th><th className="text-left">IP Address</th><th className="text-left">Location</th><th className="text-left">Success</th><th className="text-left">Date</th></tr>
-                            </thead>
-                            <tbody>
-                                {logins.map((l, i) => (
-                                    <tr key={l.id || i}>
-                                        <td className="text-white">{l.user_phone}</td>
-                                        <td className="text-white">{l.ip_address}</td>
-                                        <td className="text-white">{l.location}</td>
-                                        <td>{l.success ? <span className="text-green-400 font-bold bg-green-500/20 px-2 py-1 rounded-lg">Yes</span> : <span className="text-red-400 font-bold bg-red-500/20 px-2 py-1 rounded-lg">No</span>}</td>
-                                        <td className="text-slate-400">{new Date(l.created_at).toLocaleString()}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            );
-        }
-
-        window.renderAdminReactComponents = (data) => {
-            const handleUserAction = async (action, phone) => {
-                try {
-                    await fetch('/api/admin/users/action', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), action, phone_number: phone})
-                    });
-                    document.getElementById('login-btn').click(); // Refresh
-                } catch(e) {}
-            };
-            const handleRetry = async (order_id) => {
-                try {
-                    await fetch('/api/admin/recharges/retry', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({passcode: sessionStorage.getItem('admin-passcode'), order_id})
-                    });
-                    document.getElementById('login-btn').click(); // Refresh
-                } catch(e) {}
-            };
-
-            const rootUsers = window.reactUsersRoot || ReactDOM.createRoot(document.getElementById('react-users-root'));
-            window.reactUsersRoot = rootUsers;
-            rootUsers.render(<UsersDashboard users={data.users || []} onAction={handleUserAction} />);
-            
-            const rootRecharges = window.reactRechargesRoot || ReactDOM.createRoot(document.getElementById('react-recharges-root'));
-            window.reactRechargesRoot = rootRecharges;
-            rootRecharges.render(<RechargesDashboard transactions={data.transactions || []} onRetry={handleRetry} />);
-
-            const rootFraud = window.reactFraudRoot || ReactDOM.createRoot(document.getElementById('react-fraud-root'));
-            window.reactFraudRoot = rootFraud;
-            rootFraud.render(<FraudDashboard fraudAlerts={data.fraud_alerts || []} logins={data.logins || []} />);
-            
-            // Re-init lucide icons for react rendered content
-            setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100);
-        };
-
         const root = ReactDOM.createRoot(document.getElementById('react-tickets-root'));
         root.render(<TicketDashboard />);
     </script>
@@ -892,12 +577,11 @@
                     renderDashboard(data);
                     window.dispatchEvent(new Event('admin-unlocked'));
                 } else {
-                    document.getElementById('login-error').innerText = data.error || "Invalid Passcode";
                     document.getElementById('login-error').classList.remove('hidden');
                 }
             })
             .catch(err => {
-                document.getElementById('login-error').innerText = "Network Error: Is the server running?";
+                document.getElementById('login-error').innerText = "Network Error";
                 document.getElementById('login-error').classList.remove('hidden');
             });
         });
@@ -1002,69 +686,6 @@
                     });
                     lucide.createIcons();
                 }
-            } // Added missing closing brace
-            
-            if (data.business_metrics) {
-                const bm = data.business_metrics;
-                document.getElementById('biz-rev-today').innerText = '₹' + bm.revenue.today.toLocaleString();
-                document.getElementById('biz-rev-monthly').innerText = '₹' + bm.revenue.monthly.toLocaleString();
-                document.getElementById('biz-rev-total').innerText = '₹' + bm.revenue.total.toLocaleString();
-                
-                document.getElementById('biz-rec-count').innerText = bm.recharge.total_count.toLocaleString();
-                document.getElementById('biz-rec-success').innerText = bm.recharge.success_pct + '%';
-                document.getElementById('biz-rec-fail').innerText = bm.recharge.failure_pct + '%';
-                document.getElementById('biz-rec-pend').innerText = bm.recharge.pending_pct + '%';
-                
-                document.getElementById('biz-user-new').innerText = bm.users.new_today.toLocaleString();
-                document.getElementById('biz-user-active').innerText = bm.users.active.toLocaleString();
-                document.getElementById('biz-user-return').innerText = bm.users.returning.toLocaleString();
-                
-                document.getElementById('biz-op-top').innerText = bm.operators.top_operator || 'N/A';
-                document.getElementById('biz-op-plan').innerText = bm.operators.top_plan || 'N/A';
-                document.getElementById('biz-op-profit').innerText = bm.operators.most_profitable || 'N/A';
-            }
-            
-            if (data.marketing_data) {
-                const md = data.marketing_data;
-                document.getElementById('mkt-popular-plan-desc').innerText = md.popular_plan.desc;
-                document.getElementById('mkt-popular-plan-count').innerText = md.popular_plan.count.toLocaleString();
-                
-                const amountsList = document.getElementById('mkt-amounts-list');
-                amountsList.innerHTML = '';
-                md.top_amounts.forEach(a => {
-                    amountsList.innerHTML += `
-                        <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                            <h4 class="text-white font-bold">₹${a.amount}</h4>
-                            <div class="text-sm text-slate-400">${a.count} recharges</div>
-                        </div>
-                    `;
-                });
-                
-                const operatorList = document.getElementById('mkt-operator-list');
-                operatorList.innerHTML = '';
-                md.operator_share.forEach(o => {
-                    operatorList.innerHTML += `
-                        <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                            <h4 class="text-white font-bold">${o.operator}</h4>
-                            <div class="text-sm text-slate-400">${o.count} recharges</div>
-                        </div>
-                    `;
-                });
-                
-                const acqList = document.getElementById('mkt-acquisition-list');
-                acqList.innerHTML = '';
-                md.acquisition.forEach(ac => {
-                    acqList.innerHTML += `
-                        <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                            <h4 class="text-slate-400 text-xs uppercase tracking-wider mb-2">${ac.source}</h4>
-                            <div class="text-2xl font-bold text-white">${ac.count}</div>
-                        </div>
-                    `;
-                });
-            }
-            
-            if (window.renderAdminReactComponents) {
-                window.renderAdminReactComponents(data);
             }
         }
 
