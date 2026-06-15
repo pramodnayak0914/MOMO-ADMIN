@@ -370,7 +370,7 @@
                     return;
                 }
             }
-            fetch(\`/api/support/tickets/\${ticketId}\`, {
+            fetch(`/api/support/tickets/${ticketId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
