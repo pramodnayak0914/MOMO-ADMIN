@@ -711,12 +711,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         from urllib.parse import urlparse, parse_qs
         parsed_path = urlparse(self.path)
-        
-        if parsed_path.path == '/superadmin' or parsed_path.path == '/super-admin':
-            self.path = '/super_admin.html'
-            super().do_GET()
-            return
-            
+                    
         if parsed_path.path == '/api/support/tickets':
             query_params = parse_qs(parsed_path.query)
             user_phone = query_params.get('user_phone', [None])[0]
