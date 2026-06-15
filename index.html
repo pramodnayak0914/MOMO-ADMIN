@@ -116,6 +116,22 @@
                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                     <span>Overview</span>
                 </div>
+                <div class="sidebar-item" data-tab="tab-users">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span>User Management</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-recharges">
+                    <i data-lucide="smartphone" class="w-5 h-5"></i>
+                    <span>Recharges</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-payments">
+                    <i data-lucide="credit-card" class="w-5 h-5"></i>
+                    <span>Payment Logs</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-fraud">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-red-400"></i>
+                    <span class="text-red-400">Fraud Controls</span>
+                </div>
                 <div class="sidebar-item" data-tab="tab-analytics">
                     <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
                     <span>Analytics Funnel</span>
@@ -209,6 +225,110 @@
                                 <tbody id="purchases-table-body"></tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW TAB: USERS -->
+            <div id="tab-users" class="tab-content">
+                <div class="glass-card rounded-xl overflow-hidden mb-8">
+                    <div class="p-6 border-b border-white/10 flex justify-between items-center">
+                        <h2 class="text-xl font-bold">User Management</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse react-table">
+                            <thead>
+                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
+                                    <th class="p-4 font-semibold">Phone</th>
+                                    <th class="p-4 font-semibold">Status</th>
+                                    <th class="p-4 font-semibold">Created At</th>
+                                    <th class="p-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW TAB: RECHARGES -->
+            <div id="tab-recharges" class="tab-content">
+                <div class="glass-card rounded-xl overflow-hidden mb-8">
+                    <div class="p-6 border-b border-white/10 flex justify-between items-center">
+                        <h2 class="text-xl font-bold">Recharge Management</h2>
+                        <select id="recharge-filter" onchange="renderRecharges(window.globalData)" class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white outline-none">
+                            <option value="ALL">All</option>
+                            <option value="SUCCESS">Success</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="FAILED">Failed</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse react-table">
+                            <thead>
+                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
+                                    <th class="p-4 font-semibold">Order ID</th>
+                                    <th class="p-4 font-semibold">User</th>
+                                    <th class="p-4 font-semibold">Amount</th>
+                                    <th class="p-4 font-semibold">Status</th>
+                                    <th class="p-4 font-semibold">Date</th>
+                                    <th class="p-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recharges-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW TAB: PAYMENTS -->
+            <div id="tab-payments" class="tab-content">
+                <div class="glass-card rounded-xl overflow-hidden mb-8">
+                    <div class="p-6 border-b border-white/10">
+                        <h2 class="text-xl font-bold">Payment Gateway Logs (Cashfree)</h2>
+                        <p class="text-sm text-slate-400">Payment intent and settlement status synced with recharges.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse react-table">
+                            <thead>
+                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
+                                    <th class="p-4 font-semibold">Order ID</th>
+                                    <th class="p-4 font-semibold">Gateway Status</th>
+                                    <th class="p-4 font-semibold">Amount Settled</th>
+                                    <th class="p-4 font-semibold">Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payments-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW TAB: FRAUD CONTROLS -->
+            <div id="tab-fraud" class="tab-content">
+                <div class="glass-card rounded-xl overflow-hidden mb-8 border border-red-500/20">
+                    <div class="p-6 border-b border-white/10 bg-red-500/5 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-red-400 flex items-center gap-2">
+                                <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                                Auto-Fraud Alerts
+                            </h2>
+                            <p class="text-sm text-slate-400 mt-1">Signals caught by the backend rules engine (IP, Device, Rate limits).</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse react-table">
+                            <thead>
+                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
+                                    <th class="p-4 font-semibold">Phone</th>
+                                    <th class="p-4 font-semibold">Event Type</th>
+                                    <th class="p-4 font-semibold">Trigger Details</th>
+                                    <th class="p-4 font-semibold">IP / Device</th>
+                                    <th class="p-4 font-semibold">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fraud-table-body"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
