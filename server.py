@@ -357,7 +357,7 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
 
 
 
-        if self.path == '/admin' or self.path == '/admin/':
+        if self.path == '/admin' or self.path == '/admin/' or self.path == '/' or self.path == '':
             try:
                 with open('admin.html', 'rb') as f:
                     content = f.read()
