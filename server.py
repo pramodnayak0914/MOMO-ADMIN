@@ -86,7 +86,7 @@ def init_db():
             VALUES ('FIRST20', 'flat', 20.00, 20.00, 1)
             ON CONFLICT DO NOTHING
         ''')
-                cur.execute('''
+        cur.execute('''
             CREATE TABLE IF NOT EXISTS transactions (
                 order_id VARCHAR(50) PRIMARY KEY,
                 amount DECIMAL(10, 2) NOT NULL,
@@ -395,26 +395,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     conn = psycopg2.connect(DATABASE_URL)
                     cur = conn.cursor()
                     status = 'SUSPENDED' if action == 'suspend' else 'ACTIVE'
-                    cur.execute("UPDATE users SET status = %s WHERE phone_number = %s", (status, phone))
-                            cur.execute('''
-            CREATE TABLE IF NOT EXISTS transactions (
-                order_id VARCHAR(50) PRIMARY KEY,
-                amount DECIMAL(10, 2) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pending',
-                user_identifier VARCHAR(255) NOT NULL,
-                user_phone VARCHAR(20),
-                profit DECIMAL(10, 2) DEFAULT 0.00,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                identifier VARCHAR(255) PRIMARY KEY,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
                     conn.close()
                 self._send_json(200, {"success": True})
             except Exception as e:
@@ -431,26 +411,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 if DATABASE_URL and psycopg2:
                     conn = psycopg2.connect(DATABASE_URL)
                     cur = conn.cursor()
-                    cur.execute("UPDATE transactions SET status = %s WHERE order_id = %s", (status, order_id))
-                            cur.execute('''
-            CREATE TABLE IF NOT EXISTS transactions (
-                order_id VARCHAR(50) PRIMARY KEY,
-                amount DECIMAL(10, 2) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pending',
-                user_identifier VARCHAR(255) NOT NULL,
-                user_phone VARCHAR(20),
-                profit DECIMAL(10, 2) DEFAULT 0.00,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                identifier VARCHAR(255) PRIMARY KEY,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
                     conn.close()
                 self._send_json(200, {"success": True})
             except Exception as e:
@@ -465,26 +425,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 if DATABASE_URL and psycopg2:
                     conn = psycopg2.connect(DATABASE_URL)
                     cur = conn.cursor()
-                    cur.execute("UPDATE transactions SET status = 'PENDING' WHERE order_id = %s", (order_id,))
-                            cur.execute('''
-            CREATE TABLE IF NOT EXISTS transactions (
-                order_id VARCHAR(50) PRIMARY KEY,
-                amount DECIMAL(10, 2) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pending',
-                user_identifier VARCHAR(255) NOT NULL,
-                user_phone VARCHAR(20),
-                profit DECIMAL(10, 2) DEFAULT 0.00,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                identifier VARCHAR(255) PRIMARY KEY,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
                     conn.close()
                 self._send_json(200, {"success": True})
             except Exception as e:
@@ -504,26 +444,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     
                     cur.execute("INSERT INTO app_config (key, value) VALUES ('referral_rules', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (ref_rules,))
                     cur.execute("INSERT INTO app_config (key, value) VALUES ('cashback_rules', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (cb_rules,))
-                    cur.execute("INSERT INTO app_config (key, value) VALUES ('loyalty_rules', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (loy_rules,))
-                            cur.execute('''
-            CREATE TABLE IF NOT EXISTS transactions (
-                order_id VARCHAR(50) PRIMARY KEY,
-                amount DECIMAL(10, 2) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pending',
-                user_identifier VARCHAR(255) NOT NULL,
-                user_phone VARCHAR(20),
-                profit DECIMAL(10, 2) DEFAULT 0.00,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                identifier VARCHAR(255) PRIMARY KEY,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
                     conn.close()
                 self._send_json(200, {"success": True})
             except Exception as e:
@@ -561,26 +481,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     INSERT INTO app_config (key, value) 
                     VALUES ('assistant_name', %s) 
                     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-                ''', (new_name,))
-                        cur.execute('''
-            CREATE TABLE IF NOT EXISTS transactions (
-                order_id VARCHAR(50) PRIMARY KEY,
-                amount DECIMAL(10, 2) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pending',
-                user_identifier VARCHAR(255) NOT NULL,
-                user_phone VARCHAR(20),
-                profit DECIMAL(10, 2) DEFAULT 0.00,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                identifier VARCHAR(255) PRIMARY KEY,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
                 cur.close()
                 conn.close()
                 self._send_json(200, {"success": True})
@@ -719,27 +619,6 @@ from urllib.parse import urlparse, parse_qs
                         else:
                             refund_message = "Cashfree credentials missing, could not refund."
                     else:
-                        refund_message = "No successful transaction found for this user."
-                        
-                        cur.execute('''
-            CREATE TABLE IF NOT EXISTS transactions (
-                order_id VARCHAR(50) PRIMARY KEY,
-                amount DECIMAL(10, 2) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pending',
-                user_identifier VARCHAR(255) NOT NULL,
-                user_phone VARCHAR(20),
-                profit DECIMAL(10, 2) DEFAULT 0.00,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                identifier VARCHAR(255) PRIMARY KEY,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
                 cur.close()
                 conn.close()
                 
