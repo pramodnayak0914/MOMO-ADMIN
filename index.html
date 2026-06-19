@@ -628,6 +628,7 @@
                             <td class="p-4 font-semibold">${ticket.ticket_id}</td>
                             <td class="p-4">
                                 <select 
+                                    onclick="event.stopPropagation()"
                                     onchange="event.stopPropagation(); updateTicketStatus('${ticket.ticket_id}', this.value)"
                                     class="bg-black/50 border border-white/10 text-white text-xs rounded-lg p-2 outline-none ${isRefunded ? 'opacity-50' : ''}"
                                     ${isRefunded ? 'disabled' : ''}
