@@ -8,10 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <!-- React & Tailwind dependencies -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+                <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
@@ -522,248 +519,181 @@
         </main>
     </div>
 
-    <!-- React Tickets Component -->
-    <script type="text/babel">
-        const { useState, useEffect } = React;
 
-        function TicketDashboard() {
-            const [tickets, setTickets] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-            const [expandedRow, setExpandedRow] = useState(null);
-            const [toast, setToast] = useState(null);
-            const [confirmDialog, setConfirmDialog] = useState(null);
+    <!-- Vanilla JS Tickets Component -->
+    <script>
+        let allTickets = [];
+        let expandedTicketId = null;
 
-            const showToast = (message, type = 'success') => {
-                setToast({ message, type });
-                setTimeout(() => setToast(null), 5000);
-            };
-
-            const fetchTickets = async () => {
-                setLoading(true);
-                try {
-                    const res = await fetch('/api/support/tickets');
-                    const data = await res.json();
+        function fetchTickets() {
+            const root = document.getElementById('react-tickets-root');
+            if(allTickets.length === 0) {
+                root.innerHTML = '<div class="glass-card rounded-xl overflow-hidden relative" style="min-height: 400px;"><div class="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light"><h2 class="text-lg font-bold">Support Center</h2></div><div class="p-8 text-center text-slate-500">Loading tickets...</div></div>';
+            }
+            
+            fetch('/api/support/tickets')
+                .then(res => res.json())
+                .then(data => {
                     if (data.success) {
-                        setTickets(data.tickets || []);
-                        setError(null);
+                        allTickets = data.tickets || [];
+                        renderTicketsUI();
                     } else {
-                        setError(data.error || "Failed to load tickets");
+                        root.innerHTML = '<div class="p-4 text-red-400">Error: ' + data.error + '</div>';
                     }
-                } catch (err) {
-                    setError("Failed to connect to backend: " + err.message);
-                }
-                setLoading(false);
-            };
+                })
+                .catch(err => {
+                    root.innerHTML = '<div class="p-4 text-red-400">Failed to connect: ' + err.message + '</div>';
+                });
+        }
 
-            useEffect(() => {
-                const interval = setInterval(() => {
-                    if (sessionStorage.getItem('admin-passcode') && !confirmDialog) fetchTickets();
-                }, 10000);
-                window.addEventListener('admin-unlocked', fetchTickets);
-                return () => {
-                    clearInterval(interval);
-                    window.removeEventListener('admin-unlocked', fetchTickets);
-                };
-            }, [confirmDialog]);
-
-            const updateStatus = async (ticketId, newStatus) => {
-                if (newStatus === 'REFUNDED') {
-                    setConfirmDialog({
-                        ticketId,
-                        newStatus,
-                        message: "Are you sure you want to refund this ticket?\n\nThis will instantly return the money to the customer's bank account and CANNOT be undone!"
-                    });
+        function updateTicketStatus(ticketId, newStatus) {
+            if(newStatus === 'REFUNDED') {
+                if(!confirm("Are you sure you want to refund this ticket?\nThis cannot be undone!")) {
+                    renderTicketsUI(); // Reset dropdown
                     return;
                 }
-                await processStatusUpdate(ticketId, newStatus);
-            };
-
-            const processStatusUpdate = async (ticketId, newStatus) => {
-                try {
-                    const res = await fetch(`/api/support/tickets/${ticketId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: newStatus })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        setTickets(tickets.map(t => t.ticket_id === ticketId ? { ...t, status: newStatus } : t));
-                        if (data.refund_message) {
-                            showToast("Automated Refund:\n" + data.refund_message, 'success');
-                            const passcode = sessionStorage.getItem('admin-passcode');
-                            if (passcode) {
-                                fetch('/api/admin/data', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ passcode })
-                                })
-                                .then(r => r.json())
-                                .then(d => { if(d.success) renderDashboard(d); });
-                            }
-                        } else {
-                            showToast(`Ticket status updated to ${newStatus}`, 'success');
-                        }
-                    } else {
-                        showToast("Failed to update status: " + data.error, 'error');
-                        fetchTickets();
-                    }
-                } catch (err) {
-                    showToast("Error: " + err.message, 'error');
+            }
+            
+            fetch('/api/support/tickets/' + ticketId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    if(data.refund_message) alert("Refund: " + data.refund_message);
+                    fetchTickets();
+                } else {
+                    alert("Failed: " + data.error);
                     fetchTickets();
                 }
-            };
+            })
+            .catch(err => {
+                alert("Error: " + err.message);
+            });
+        }
 
-            const getStatusBadge = (status) => {
-                const base = "px-3 py-1 rounded-full text-xs font-bold border ";
-                switch(status) {
-                    case 'OPEN': return base + 'bg-red-500/20 text-red-400 border-red-500/50';
-                    case 'IN_PROGRESS': return base + 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
-                    case 'RESOLVED': return base + 'bg-green-500/20 text-green-400 border-green-500/50';
-                    case 'REFUNDED': return base + 'bg-blue-500/20 text-blue-400 border-blue-500/50';
-                    default: return base + 'bg-gray-500/20 text-gray-400 border-gray-500/50';
-                }
-            };
+        function toggleTicketRow(ticketId) {
+            expandedTicketId = (expandedTicketId === ticketId) ? null : ticketId;
+            renderTicketsUI();
+        }
 
-            if (error) return <div className="text-red-400 p-4 bg-red-900/20 border border-red-900/50 rounded-lg">Error: {error}</div>;
+        function getTicketBadge(status) {
+            const base = "px-3 py-1 rounded-full text-xs font-bold border ";
+            switch(status) {
+                case 'OPEN': return base + 'bg-red-500/20 text-red-400 border-red-500/50';
+                case 'IN_PROGRESS': return base + 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+                case 'RESOLVED': return base + 'bg-green-500/20 text-green-400 border-green-500/50';
+                case 'REFUNDED': return base + 'bg-blue-500/20 text-blue-400 border-blue-500/50';
+                default: return base + 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+            }
+        }
 
-            return (
-                <div className="glass-card rounded-xl overflow-hidden relative" style={{ minHeight: '400px' }}>
-                    {/* Toast Notification */}
-                    {toast && (
-                        <div className={`absolute top-4 right-4 z-50 p-4 rounded-lg shadow-lg border backdrop-blur-md transition-all flex items-start gap-3 max-w-sm ${toast.type === 'error' ? 'bg-red-500/20 border-red-500/50 text-red-100' : 'bg-green-500/20 border-green-500/50 text-green-100'}`}>
-                            <div className="text-sm whitespace-pre-wrap font-medium">{toast.message}</div>
-                            <button onClick={() => setToast(null)} className="ml-auto opacity-70 hover:opacity-100 text-lg leading-none">&times;</button>
-                        </div>
-                    )}
-                    
-                    {/* Confirm Modal */}
-                    {confirmDialog && (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                            <div className="bg-[#1a1a24] border border-red-500/30 rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
-                                <div className="p-4 border-b border-white/5 bg-red-500/10 flex items-center gap-3">
-                                    <h3 className="text-red-400 font-bold flex items-center gap-2">⚠️ Confirm Critical Action</h3>
-                                </div>
-                                <div className="p-6">
-                                    <p className="text-slate-300 text-sm whitespace-pre-wrap mb-6 leading-relaxed">
-                                        {confirmDialog.message}
-                                    </p>
-                                    <div className="flex gap-3 justify-end">
-                                        <button 
-                                            onClick={() => { setConfirmDialog(null); fetchTickets(); }}
-                                            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button 
-                                            onClick={() => {
-                                                const { ticketId, newStatus } = confirmDialog;
-                                                setConfirmDialog(null);
-                                                processStatusUpdate(ticketId, newStatus);
-                                            }}
-                                            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition shadow-[0_0_15px_rgba(239,68,68,0.3)]"
-                                        >
-                                            Yes, Process Refund
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
-                        <h2 className="text-lg font-bold">Support Center</h2>
-                        <button onClick={fetchTickets} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition border border-white/10 flex items-center gap-2">
-                            <i data-lucide="refresh-cw" className="w-4 h-4"></i>
-                            Refresh Data
+        function renderTicketsUI() {
+            const root = document.getElementById('react-tickets-root');
+            
+            let html = `
+                <div class="glass-card rounded-xl overflow-hidden relative" style="min-height: 400px;">
+                    <div class="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
+                        <h2 class="text-lg font-bold">Support Center</h2>
+                        <button onclick="fetchTickets()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition border border-white/10 flex items-center gap-2">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh Data
                         </button>
                     </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="react-table">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr>
-                                    <th>Ticket ID</th>
-                                    <th>Status</th>
-                                    <th>User Phone</th>
-                                    <th>Issue Type</th>
-                                    <th>Target Number</th>
-                                    <th>Actions</th>
+                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
+                                    <th class="p-4 font-semibold">Ticket ID</th>
+                                    <th class="p-4 font-semibold">Status</th>
+                                    <th class="p-4 font-semibold">User Phone</th>
+                                    <th class="p-4 font-semibold">Issue Type</th>
+                                    <th class="p-4 font-semibold">Target Number</th>
+                                    <th class="p-4 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {loading && tickets.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center py-8 text-slate-500">Loading tickets...</td></tr>
-                                ) : tickets.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center py-8 text-slate-500">No tickets found in database.</td></tr>
-                                ) : tickets.map(ticket => (
-                                    <React.Fragment key={ticket.id}>
-                                        <tr className="cursor-pointer hover:bg-white/5 transition" onClick={() => setExpandedRow(expandedRow === ticket.id ? null : ticket.id)}>
-                                            <td className="font-semibold">{ticket.ticket_id}</td>
-                                            <td>
-                                                <select 
-                                                    value={ticket.status}
-                                                    disabled={ticket.status === 'REFUNDED'}
-                                                    onChange={(e) => { e.stopPropagation(); updateStatus(ticket.ticket_id, e.target.value); }}
-                                                    className={`bg-black/50 border border-white/10 text-white text-xs rounded-lg p-2 outline-none ${ticket.status === 'REFUNDED' ? 'opacity-50 cursor-not-allowed' : 'focus:border-primary'}`}
-                                                >
-                                                    <option value="OPEN">OPEN</option>
-                                                    <option value="IN_PROGRESS">IN PROGRESS</option>
-                                                    <option value="RESOLVED">RESOLVED</option>
-                                                    <option value="REFUNDED">REFUNDED</option>
-                                                </select>
-                                            </td>
-                                            <td>{ticket.user_phone}</td>
-                                            <td className="text-accent">{ticket.issue_type}</td>
-                                            <td>{ticket.target_number || 'N/A'}</td>
-                                            <td>
-                                                <button className="text-primary hover:text-white transition text-sm flex items-center gap-1">
-                                                    {expandedRow === ticket.id ? 'Hide Details' : 'View Details'}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        {expandedRow === ticket.id && (
-                                            <tr className="bg-black/20">
-                                                <td colSpan="6" className="p-6">
-                                                    <div className="grid grid-cols-2 gap-8">
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Description</h4>
-                                                            <p className="text-slate-300 text-sm whitespace-pre-wrap bg-black/40 p-4 rounded-lg border border-white/5">
-                                                                {ticket.description}
-                                                            </p>
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Metadata</h4>
-                                                            <div className="bg-black/40 p-4 rounded-lg border border-white/5 space-y-2 text-sm">
-                                                                <div className="flex justify-between border-b border-white/5 pb-2">
-                                                                    <span className="text-slate-400">Created At:</span>
-                                                                    <span>{new Date(ticket.created_at).toLocaleString()}</span>
-                                                                </div>
-                                                                <div className="flex justify-between border-b border-white/5 pb-2">
-                                                                    <span className="text-slate-400">Database ID:</span>
-                                                                    <span>{ticket.id}</span>
-                                                                </div>
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-slate-400">Current Status:</span>
-                                                                    <span className={getStatusBadge(ticket.status)}>{ticket.status}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </React.Fragment>
-                                ))}
+            `;
+
+            if (allTickets.length === 0) {
+                html += '<tr><td colspan="6" class="text-center py-8 text-slate-500">No tickets found in database.</td></tr>';
+            } else {
+                allTickets.forEach(ticket => {
+                    const isExpanded = expandedTicketId === ticket.ticket_id;
+                    const isRefunded = ticket.status === 'REFUNDED';
+                    
+                    html += `
+                        <tr class="border-b border-white/5 hover:bg-white/5 cursor-pointer transition" onclick="toggleTicketRow('${ticket.ticket_id}')">
+                            <td class="p-4 font-semibold">${ticket.ticket_id}</td>
+                            <td class="p-4">
+                                <select 
+                                    onchange="event.stopPropagation(); updateTicketStatus('${ticket.ticket_id}', this.value)"
+                                    class="bg-black/50 border border-white/10 text-white text-xs rounded-lg p-2 outline-none ${isRefunded ? 'opacity-50' : ''}"
+                                    ${isRefunded ? 'disabled' : ''}
+                                >
+                                    <option value="OPEN" ${ticket.status==='OPEN'?'selected':''}>OPEN</option>
+                                    <option value="IN_PROGRESS" ${ticket.status==='IN_PROGRESS'?'selected':''}>IN PROGRESS</option>
+                                    <option value="RESOLVED" ${ticket.status==='RESOLVED'?'selected':''}>RESOLVED</option>
+                                    <option value="REFUNDED" ${ticket.status==='REFUNDED'?'selected':''}>REFUNDED</option>
+                                </select>
+                            </td>
+                            <td class="p-4">${ticket.user_phone}</td>
+                            <td class="p-4 text-accent">${ticket.issue_type}</td>
+                            <td class="p-4">${ticket.target_number || 'N/A'}</td>
+                            <td class="p-4 text-primary text-sm">${isExpanded ? 'Hide Details' : 'View Details'}</td>
+                        </tr>
+                    `;
+
+                    if (isExpanded) {
+                        html += `
+                            <tr class="bg-black/20">
+                                <td colspan="6" class="p-6">
+                                    <div class="grid grid-cols-2 gap-8">
+                                        <div>
+                                            <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Description</h4>
+                                            <p class="text-slate-300 text-sm whitespace-pre-wrap bg-black/40 p-4 rounded-lg border border-white/5">${ticket.description}</p>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Metadata</h4>
+                                            <div class="bg-black/40 p-4 rounded-lg border border-white/5 space-y-2 text-sm">
+                                                <div class="flex justify-between border-b border-white/5 pb-2">
+                                                    <span class="text-slate-400">Created At:</span>
+                                                    <span>${new Date(ticket.created_at).toLocaleString()}</span>
+                                                </div>
+                                                <div class="flex justify-between border-b border-white/5 pb-2">
+                                                    <span class="text-slate-400">Database ID:</span>
+                                                    <span>${ticket.id}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-slate-400">Current Status:</span>
+                                                    <span class="${getTicketBadge(ticket.status)}">${ticket.status}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+            }
+
+            html += `
                             </tbody>
                         </table>
                     </div>
                 </div>
-            );
+            `;
+
+            root.innerHTML = html;
+            lucide.createIcons();
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('react-tickets-root'));
-        root.render(<TicketDashboard />);
+        window.addEventListener('admin-unlocked', fetchTickets);
+        setInterval(() => {
+            if (sessionStorage.getItem('admin-passcode')) fetchTickets();
+        }, 10000);
     </script>
 
     <!-- Vanilla JS Logic for existing features -->
