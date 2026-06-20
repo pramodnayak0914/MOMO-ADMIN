@@ -572,9 +572,15 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                             "cashback": cashback_rules,
                             "loyalty": loyalty_rules
                         }
+                        
+                        cur.execute("SELECT value FROM app_config WHERE key = 'admin_permissions'")
+                        perm_row = cur.fetchone()
+                        admin_permissions = json.loads(perm_row['value']) if perm_row else {"can_refund": True, "can_suspend_users": True, "can_edit_growth": True, "can_view_marketing": True}
+
                     except Exception as e:
                         print(f"Error fetching config: {e}")
                         growth_rules = {}
+                        admin_permissions = {"can_refund": True, "can_suspend_users": True, "can_edit_growth": True, "can_view_marketing": True}
                         
                     cur.close()
                     conn.close()
@@ -582,6 +588,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     transactions = [{"order_id": "TEST", "status": "SUCCESS", "amount": 0, "created_at": "N/A"}]
                     current_assistant_name = "Offline"
                     growth_rules = {}
+                    admin_permissions = {"can_refund": True, "can_suspend_users": True, "can_edit_growth": True, "can_view_marketing": True}
                 
                 self._send_json(200, {
                     "success": True,
@@ -594,7 +601,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     "fraud_alerts": fraud_list,
                     "growth_rules": growth_rules,
                     "business_metrics": business_metrics,
-                    "marketing_data": marketing_data
+                    "marketing_data": marketing_data,
+                    "admin_permissions": admin_permissions
                 })
             except Exception as e:
                 print(f"Error fetching admin data: {e}")

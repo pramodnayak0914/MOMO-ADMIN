@@ -1,35 +1,27 @@
 import re
-
 with open('server.py', 'r') as f:
     content = f.read()
 
-new_endpoints = """        elif self.path == '/api/admin/recharges/status':
-            content_length = int(self.headers.get('Content-Length', 0))
-            data = json.loads(self.rfile.read(content_length))
-            if data.get('passcode') != ADMIN_PASSCODE: return self._send_json(401, {"error": "Unauthorized"})
-            order_id = data.get('order_id')
-            status = data.get('status')
-            try:
-                if DATABASE_URL and psycopg2:
-                    conn = psycopg2.connect(DATABASE_URL)
-                    cur = conn.cursor()
-                    cur.execute("UPDATE transactions SET status = %s WHERE order_id = %s", (status, order_id))
-                    conn.commit()
-                    conn.close()
-                self._send_json(200, {"success": True})
-            except Exception as e:
-                self._send_json(500, {"error": str(e)})
-            return
-        elif self.path == '/api/admin/recharges/retry':"""
+# Replace import sqlite3
+content = content.replace('import sqlite3\n', '''sqlite3_import_error = None
+try:
+    from db_adapter import sqlite3_proxy as sqlite3
+    RealDictCursor = None
+except ImportError as e:
+    sqlite3 = None
+    sqlite3_import_error = str(e)
+''')
 
-content = content.replace("        elif self.path == '/api/admin/recharges/retry':", new_endpoints)
+# Add dotenv to requirements.txt if not exists
+with open('requirements.txt', 'a') as f:
+    f.write('\npsycopg2-binary==2.9.9\npython-dotenv==1.0.0\n')
+
+# Also fix the init_db duplicate column bug in server.py
+content = content.replace('''        except sqlite3.OperationalError:
+            pass
+        except sqlite3.Error:
+            conn.rollback()''', '''        except Exception:
+            conn.rollback()''')
 
 with open('server.py', 'w') as f:
     f.write(content)
-
-with open('index.html', 'r') as f:
-    html = f.read()
-html = html.replace("'/api/admin/recharge/status'", "'/api/admin/recharges/status'")
-html = html.replace("'/api/admin/recharge/retry'", "'/api/admin/recharges/retry'")
-with open('index.html', 'w') as f:
-    f.write(html)

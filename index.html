@@ -688,7 +688,7 @@
                                     <option value="OPEN" ${ticket.status==='OPEN'?'selected':''}>OPEN</option>
                                     <option value="IN_PROGRESS" ${ticket.status==='IN_PROGRESS'?'selected':''}>IN PROGRESS</option>
                                     <option value="RESOLVED" ${ticket.status==='RESOLVED'?'selected':''}>RESOLVED</option>
-                                    <option value="REFUNDED" ${ticket.status==='REFUNDED'?'selected':''}>REFUNDED</option>
+                                    ${(window.adminPermissions?.can_refund || ticket.status==='REFUNDED') ? `<option value="REFUNDED" ${ticket.status==='REFUNDED'?'selected':''}>REFUNDED</option>` : ''}
                                 </select>
                             </td>
                             <td class="p-4">${ticket.user_phone}</td>
@@ -810,6 +810,19 @@
         function renderDashboard(data) {
             if (data.assistant_name) {
                 document.getElementById('admin-assistant-name').value = data.assistant_name;
+            }
+            if (data.admin_permissions) {
+                window.adminPermissions = data.admin_permissions;
+                
+                // Enforce Marketing Visibility
+                const marketingTab = document.querySelector('.sidebar-item[data-tab="tab-marketing"]');
+                if (marketingTab) marketingTab.style.display = data.admin_permissions.can_view_marketing ? 'flex' : 'none';
+                
+                // Enforce Growth Engine Edits
+                const growthInputs = document.querySelectorAll('#tab-growth input');
+                const growthBtn = document.querySelector('#tab-growth button');
+                growthInputs.forEach(inp => inp.disabled = !data.admin_permissions.can_edit_growth);
+                if (growthBtn) growthBtn.style.display = data.admin_permissions.can_edit_growth ? 'block' : 'none';
             }
             let totalRevenue = 0;
             let totalRefunded = 0;
