@@ -64,8 +64,12 @@
                 method: 'POST', body: JSON.stringify({email})
             }).then(r=>r.json()).then(d => {
                 if(d.success) {
-                    document.getElementById('fp-step-1').classList.add('hidden');
-                    document.getElementById('fp-step-2').classList.remove('hidden');
+                    const s1 = document.getElementById('fp-step-1');
+                    const s2 = document.getElementById('fp-step-2');
+                    s1.classList.add('hidden');
+                    s1.style.display = 'none';
+                    s2.classList.remove('hidden');
+                    s2.style.display = 'block';
                 } else {
                     errEl.innerText = d.error || "Error requesting reset code";
                     errEl.classList.remove('hidden');
