@@ -136,7 +136,7 @@
             <input type="email" id="admin-email" placeholder="Email Address" class="w-full mb-4 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition">
             <input type="password" id="admin-password" placeholder="Password" class="w-full mb-6 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition">
             <button id="login-btn" class="primary-glow-btn full-width py-4 rounded-xl mb-4">Unlock Dashboard</button>
-            <a href="#" onclick="showForgotPassword()" class="text-slate-400 hover:text-white text-sm transition block mb-2">Forgot Password?</a>
+            <button id="btn-forgot-password" type="button" class="text-slate-400 hover:text-white text-sm transition block mb-2 mx-auto cursor-pointer">Forgot Password?</button>
             <p id="login-error" class="text-red-500 mt-4 hidden">Invalid Credentials</p>
         </div>
     </div>
@@ -1016,12 +1016,25 @@
                 if(data.success) {
                     const msg = document.getElementById('save-settings-msg');
                     msg.classList.remove('hidden');
-                    setTimeout(() => msg.classList.add('hidden'), 3000);
+                    setTimeout(() => {
+                      if (msg) msg.classList.add('hidden');
+                    }, 3000);
                 } else {
                     alert('Error saving name: ' + data.error);
                 }
             })
             .catch(err => console.error(err));
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('btn-forgot-password');
+            if(btn) {
+                btn.addEventListener('click', () => {
+                    console.log('Forgot Password clicked via event listener');
+                    if (window.showForgotPassword) window.showForgotPassword();
+                });
+            }
         });
     </script>
 </body>
