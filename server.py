@@ -837,6 +837,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                             refund_message = "Cashfree credentials missing, could not refund."
                     else:
                         refund_message = "Transaction not found for refund."
+                
+                conn.commit()
                 cur.close()
                 conn.close()
                 
