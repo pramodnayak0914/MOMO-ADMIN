@@ -220,7 +220,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 resend_key = os.environ.get('RESEND_API_KEY')
                 support_email = os.environ.get('SUPPORT_EMAIL', 'support@onlinerecharge-ai.com')
                 if not resend_key:
-                    return self._send_json(500, {"success": False, "error": "RESEND_API_KEY is missing from Render Environment Variables. Please add it."})
+                    print("ERROR: RESEND_API_KEY missing from environment variables.")
+                    return self._send_json(500, {"success": False, "error": "Email service is temporarily unavailable. Please contact support."})
                 if resend_key:
                     import urllib.request
                     req = urllib.request.Request("https://api.resend.com/emails", method="POST")

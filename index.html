@@ -50,7 +50,16 @@
 
         window.requestResetCode = function() {
             const email = document.getElementById('fp-email').value;
-            if(!email) return alert("Enter your email");
+            const errEl = document.getElementById('fp-error');
+            const succEl = document.getElementById('fp-success');
+            errEl.classList.add('hidden');
+            succEl.classList.add('hidden');
+            
+            if(!email) {
+                errEl.innerText = "Enter your email";
+                errEl.classList.remove('hidden');
+                return;
+            }
             fetch('/api/admin/forgot-password', {
                 method: 'POST', body: JSON.stringify({email})
             }).then(r=>r.json()).then(d => {
@@ -58,8 +67,12 @@
                     document.getElementById('fp-step-1').classList.add('hidden');
                     document.getElementById('fp-step-2').classList.remove('hidden');
                 } else {
-                    alert(d.error || "Error requesting reset code");
+                    errEl.innerText = d.error || "Error requesting reset code";
+                    errEl.classList.remove('hidden');
                 }
+            }).catch(e => {
+                errEl.innerText = "Network error. Please try again.";
+                errEl.classList.remove('hidden');
             });
         };
 
@@ -67,16 +80,30 @@
             const email = document.getElementById('fp-email').value;
             const code = document.getElementById('fp-code').value;
             const new_password = document.getElementById('fp-new-password').value;
-            if(!code || !new_password) return alert("Fill all fields");
+            const errEl = document.getElementById('fp-error');
+            const succEl = document.getElementById('fp-success');
+            errEl.classList.add('hidden');
+            succEl.classList.add('hidden');
+
+            if(!code || !new_password) {
+                errEl.innerText = "Fill all fields";
+                errEl.classList.remove('hidden');
+                return;
+            }
             fetch('/api/admin/reset-password', {
                 method: 'POST', body: JSON.stringify({email, code, new_password})
             }).then(r=>r.json()).then(d => {
                 if(d.success) {
-                    alert("Password reset successfully! You can now log in.");
-                    hideForgotPassword();
+                    succEl.innerText = "Password reset successfully! You can now log in.";
+                    succEl.classList.remove('hidden');
+                    setTimeout(() => hideForgotPassword(), 3000);
                 } else {
-                    alert(d.error || "Error resetting password");
+                    errEl.innerText = d.error || "Error resetting password";
+                    errEl.classList.remove('hidden');
                 }
+            }).catch(e => {
+                errEl.innerText = "Network error. Please try again.";
+                errEl.classList.remove('hidden');
             });
         };
     </script>
@@ -171,6 +198,9 @@
                 <button onclick="resetPassword()" class="primary-glow-btn full-width py-3 rounded-xl mb-3">Reset Password</button>
                 <button onclick="hideForgotPassword()" class="bg-slate-800 hover:bg-slate-700 text-white full-width py-3 rounded-xl transition">Cancel</button>
             </div>
+            
+            <p id="fp-error" class="text-red-500 mt-4 text-sm hidden"></p>
+            <p id="fp-success" class="text-green-500 mt-4 text-sm hidden"></p>
         </div>
     </div>
 
