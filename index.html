@@ -669,6 +669,12 @@
                     const isExpanded = expandedTicketId === ticket.ticket_id;
                     const isRefunded = ticket.status === 'REFUNDED';
                     
+                    let statusColorClass = 'text-white border-white/10 bg-black/50';
+                    if (ticket.status === 'OPEN') statusColorClass = 'text-red-400 border-red-500/30 bg-red-500/10 font-bold';
+                    if (ticket.status === 'IN_PROGRESS') statusColorClass = 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10 font-bold';
+                    if (ticket.status === 'REFUNDED') statusColorClass = 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10 font-bold';
+                    if (ticket.status === 'RESOLVED') statusColorClass = 'text-blue-400 border-blue-500/30 bg-blue-500/10 font-bold';
+
                     html += `
                         <tr class="border-b border-white/5 hover:bg-white/5 cursor-pointer transition" onclick="toggleTicketRow('${ticket.ticket_id}')">
                             <td class="p-4 font-semibold">${ticket.ticket_id}</td>
@@ -676,7 +682,7 @@
                                 <select 
                                     onclick="event.stopPropagation()"
                                     onchange="event.stopPropagation(); updateTicketStatus('${ticket.ticket_id}', this.value)"
-                                    class="bg-black/50 border border-white/10 text-white text-xs rounded-lg p-2 outline-none ${isRefunded ? 'opacity-50' : ''}"
+                                    class="text-xs rounded-lg p-2 outline-none border ${statusColorClass} ${isRefunded ? 'opacity-50' : ''}"
                                     ${isRefunded ? 'disabled' : ''}
                                 >
                                     <option value="OPEN" ${ticket.status==='OPEN'?'selected':''}>OPEN</option>
