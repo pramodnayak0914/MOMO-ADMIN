@@ -610,6 +610,9 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     conn = psycopg2.connect(DATABASE_URL)
                     cur = conn.cursor()
                     status = 'SUSPENDED' if action == 'suspend' else 'ACTIVE'
+                    cur.execute("UPDATE users SET status = %s WHERE phone_number = %s", (status, phone))
+                    conn.commit()
+                    cur.close()
                     conn.close()
                 self._send_json(200, {"success": True})
             except Exception as e:
@@ -626,6 +629,9 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 if DATABASE_URL and psycopg2:
                     conn = psycopg2.connect(DATABASE_URL)
                     cur = conn.cursor()
+                    cur.execute("UPDATE transactions SET status = %s WHERE order_id = %s", (status, order_id))
+                    conn.commit()
+                    cur.close()
                     conn.close()
                 self._send_json(200, {"success": True})
             except Exception as e:
@@ -640,6 +646,9 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 if DATABASE_URL and psycopg2:
                     conn = psycopg2.connect(DATABASE_URL)
                     cur = conn.cursor()
+                    cur.execute("UPDATE transactions SET status = 'PENDING' WHERE order_id = %s", (order_id,))
+                    conn.commit()
+                    cur.close()
                     conn.close()
                 self._send_json(200, {"success": True})
             except Exception as e:
@@ -659,6 +668,9 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     
                     cur.execute("INSERT INTO app_config (key, value) VALUES ('referral_rules', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (ref_rules,))
                     cur.execute("INSERT INTO app_config (key, value) VALUES ('cashback_rules', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (cb_rules,))
+                    cur.execute("INSERT INTO app_config (key, value) VALUES ('loyalty_rules', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (loy_rules,))
+                    conn.commit()
+                    cur.close()
                     conn.close()
                 self._send_json(200, {"success": True})
             except Exception as e:
