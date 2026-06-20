@@ -32,6 +32,22 @@ def init_db():
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
         cur.execute('''
+            CREATE TABLE IF NOT EXISTS admins (
+                email VARCHAR(100) PRIMARY KEY,
+                password_hash VARCHAR(255) NOT NULL,
+                role VARCHAR(50) DEFAULT 'admin',
+                status VARCHAR(20) DEFAULT 'ACTIVE',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                reset_code VARCHAR(10),
+                reset_expires TIMESTAMP
+            )
+        ''')
+        try:
+            cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS reset_code VARCHAR(10)")
+            cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS reset_expires TIMESTAMP")
+        except Exception:
+            conn.rollback()
+        cur.execute('''
             CREATE TABLE IF NOT EXISTS support_tickets (
                 id SERIAL PRIMARY KEY,
                 ticket_id VARCHAR(50) UNIQUE NOT NULL,
@@ -124,14 +140,140 @@ init_db()
 
 class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
 
+    def authenticate_admin(self, data):
+        email = data.get('email')
+        token = data.get('token')
+        if not email or not token:
+            return False
+        if not psycopg2 or not DATABASE_URL:
+            # fallback if no DB
+            return data.get('passcode') == ADMIN_PASSCODE
+        try:
+            conn = psycopg2.connect(DATABASE_URL)
+            cur = conn.cursor()
+            cur.execute("SELECT password_hash FROM admins WHERE email = %s AND status = 'ACTIVE'", (email,))
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+            if row and row[0] == token:
+                return True
+        except Exception as e:
+            print(f"Auth error: {e}")
+        return False
+
     def do_POST(self):
+
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        try:
+            data = json.loads(post_data)
+        except Exception:
+            data = {}
+
+        if self.path == '/api/admin/login':
+            email = data.get('email')
+            password = data.get('password')
+            if not email or not password:
+                return self._send_json(400, {"success": False, "error": "Email and password required"})
+            
+            if not psycopg2 or not DATABASE_URL:
+                if password == ADMIN_PASSCODE:
+                    return self._send_json(200, {"success": True, "token": ADMIN_PASSCODE})
+                return self._send_json(401, {"success": False, "error": "Invalid Passcode"})
+            
+            import hashlib
+            pw_hash = hashlib.sha256(password.encode()).hexdigest()
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor()
+                cur.execute("SELECT password_hash, role FROM admins WHERE email = %s AND status = 'ACTIVE'", (email,))
+                row = cur.fetchone()
+                cur.close()
+                conn.close()
+                if row and row[0] == pw_hash:
+                    return self._send_json(200, {"success": True, "token": pw_hash, "role": row[1]})
+            except Exception as e:
+                print(f"Login error: {e}")
+            return self._send_json(401, {"success": False, "error": "Invalid email or password"})
+
+        elif self.path == '/api/admin/forgot-password':
+            email = data.get('email')
+            if not email: return self._send_json(400, {"success": False, "error": "Email required"})
+            if not psycopg2 or not DATABASE_URL:
+                return self._send_json(400, {"success": False, "error": "Database not configured"})
+            import random, datetime
+            code = str(random.randint(100000, 999999))
+            expires = datetime.datetime.now() + datetime.timedelta(minutes=15)
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor()
+                cur.execute("SELECT email FROM admins WHERE email = %s", (email,))
+                if not cur.fetchone():
+                    cur.close(); conn.close()
+                    return self._send_json(200, {"success": True}) # Don't reveal if email exists
+                
+                cur.execute("UPDATE admins SET reset_code = %s, reset_expires = %s WHERE email = %s", (code, expires, email))
+                conn.commit()
+                cur.close(); conn.close()
+                
+                # Send email via Resend
+                resend_key = os.environ.get('RESEND_API_KEY')
+                support_email = os.environ.get('SUPPORT_EMAIL', 'support@onlinerecharge-ai.com')
+                if resend_key:
+                    import urllib.request
+                    req = urllib.request.Request("https://api.resend.com/emails", method="POST")
+                    req.add_header("Authorization", f"Bearer {resend_key}")
+                    req.add_header("Content-Type", "application/json")
+                    payload = json.dumps({
+                        "from": f"MOMO Admin Support <{support_email}>",
+                        "to": [email],
+                        "subject": "Admin Password Reset Code",
+                        "html": f"<p>Your password reset code is: <strong>{code}</strong></p><p>This code expires in 15 minutes.</p>"
+                    }).encode()
+                    urllib.request.urlopen(req, data=payload)
+                return self._send_json(200, {"success": True})
+            except Exception as e:
+                print(f"Forgot password error: {e}")
+                return self._send_json(500, {"success": False, "error": str(e)})
+
+        elif self.path == '/api/admin/reset-password':
+            email = data.get('email')
+            code = data.get('code')
+            new_password = data.get('new_password')
+            if not email or not code or not new_password:
+                return self._send_json(400, {"success": False, "error": "Missing fields"})
+            if not psycopg2 or not DATABASE_URL:
+                return self._send_json(400, {"success": False, "error": "Database not configured"})
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor()
+                cur.execute("SELECT reset_code, reset_expires FROM admins WHERE email = %s", (email,))
+                row = cur.fetchone()
+                if not row or row[0] != code:
+                    return self._send_json(400, {"success": False, "error": "Invalid or expired code"})
+                
+                import datetime
+                if row[1] and row[1] < datetime.datetime.now():
+                    return self._send_json(400, {"success": False, "error": "Code has expired"})
+                
+                import hashlib
+                pw_hash = hashlib.sha256(new_password.encode()).hexdigest()
+                cur.execute("UPDATE admins SET password_hash = %s, reset_code = NULL, reset_expires = NULL WHERE email = %s", (pw_hash, email))
+                conn.commit()
+                cur.close(); conn.close()
+                return self._send_json(200, {"success": True})
+            except Exception as e:
+                return self._send_json(500, {"success": False, "error": str(e)})
+
+        # Parse data again for older endpoints that expect it parsed
+        post_data_old = post_data
 
         if self.path == '/api/super-admin/promo':
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data)
-                if data.get('passcode') != ADMIN_PASSCODE:
+                if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
                 code = data.get('code')
@@ -167,7 +309,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data)
-                if data.get('passcode') != ADMIN_PASSCODE:
+                if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
                 campaign_type = data.get('campaign_type') # 'sms', 'whatsapp', 'push'
@@ -200,7 +342,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data)
-                if data.get('passcode') != ADMIN_PASSCODE:
+                if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
                 
@@ -314,7 +456,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             
             try:
                 data = json.loads(post_data)
-                if data.get('passcode') != ADMIN_PASSCODE:
+                if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
                 
@@ -583,7 +725,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/api/admin/users/action':
             content_length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(content_length))
-            if data.get('passcode') != ADMIN_PASSCODE: return self._send_json(401, {"error": "Unauthorized"})
+            if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
             action = data.get('action')
             phone = data.get('phone_number')
             try:
@@ -603,7 +745,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/api/admin/recharges/status':
             content_length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(content_length))
-            if data.get('passcode') != ADMIN_PASSCODE: return self._send_json(401, {"error": "Unauthorized"})
+            if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
             order_id = data.get('order_id')
             status = data.get('status')
             try:
@@ -621,7 +763,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/api/admin/recharges/retry':
             content_length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(content_length))
-            if data.get('passcode') != ADMIN_PASSCODE: return self._send_json(401, {"error": "Unauthorized"})
+            if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
             order_id = data.get('order_id')
             try:
                 if DATABASE_URL and psycopg2:
@@ -638,7 +780,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/api/admin/growth/save':
             content_length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(content_length))
-            if data.get('passcode') != ADMIN_PASSCODE: return self._send_json(401, {"error": "Unauthorized"})
+            if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
             try:
                 if DATABASE_URL and psycopg2:
                     conn = psycopg2.connect(DATABASE_URL)
@@ -667,7 +809,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data)
-                if data.get('passcode') != ADMIN_PASSCODE:
+                if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
                 

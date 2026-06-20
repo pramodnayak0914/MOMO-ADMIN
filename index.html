@@ -90,9 +90,33 @@
                 <i data-lucide="shield" class="w-8 h-8 text-white"></i>
             </div>
             <h2 class="text-2xl font-bold mb-6 text-white">Admin Access</h2>
-            <input type="password" id="admin-passcode" placeholder="Enter Passcode" class="w-full mb-6 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition">
-            <button id="login-btn" class="primary-glow-btn full-width py-4 rounded-xl">Unlock Dashboard</button>
-            <p id="login-error" class="text-red-500 mt-4 hidden">Invalid Passcode</p>
+            <input type="email" id="admin-email" placeholder="Email Address" class="w-full mb-4 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition">
+            <input type="password" id="admin-password" placeholder="Password" class="w-full mb-6 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition">
+            <button id="login-btn" class="primary-glow-btn full-width py-4 rounded-xl mb-4">Unlock Dashboard</button>
+            <a href="#" onclick="showForgotPassword()" class="text-slate-400 hover:text-white text-sm transition block mb-2">Forgot Password?</a>
+            <p id="login-error" class="text-red-500 mt-4 hidden">Invalid Credentials</p>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgot-password-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="glass-card w-full max-w-md p-8 rounded-2xl text-center border border-white/10">
+            <h2 class="text-2xl font-bold mb-4 text-white">Reset Password</h2>
+            
+            <div id="fp-step-1">
+                <p class="text-slate-300 text-sm mb-6">Enter your email address to receive a 6-digit reset code.</p>
+                <input type="email" id="fp-email" placeholder="Email Address" class="w-full mb-4 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition">
+                <button onclick="requestResetCode()" class="primary-glow-btn full-width py-3 rounded-xl mb-3">Send Reset Code</button>
+                <button onclick="hideForgotPassword()" class="bg-slate-800 hover:bg-slate-700 text-white full-width py-3 rounded-xl transition">Cancel</button>
+            </div>
+            
+            <div id="fp-step-2" class="hidden">
+                <p class="text-slate-300 text-sm mb-6">Enter the 6-digit code sent to your email and your new password.</p>
+                <input type="text" id="fp-code" placeholder="6-Digit Code" class="w-full mb-4 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition text-center tracking-[0.5em] font-mono">
+                <input type="password" id="fp-new-password" placeholder="New Password" class="w-full mb-6 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition">
+                <button onclick="resetPassword()" class="primary-glow-btn full-width py-3 rounded-xl mb-3">Reset Password</button>
+                <button onclick="hideForgotPassword()" class="bg-slate-800 hover:bg-slate-700 text-white full-width py-3 rounded-xl transition">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -746,7 +770,7 @@
 
         window.addEventListener('admin-unlocked', fetchTickets);
         setInterval(() => {
-            if (sessionStorage.getItem('admin-passcode')) fetchTickets();
+            if (sessionStorage.getItem('admin-token')) fetchTickets();
         }, 10000);
     </script>
 
@@ -777,21 +801,33 @@
         });
 
         document.getElementById('login-btn').addEventListener('click', () => {
-            const passcode = document.getElementById('admin-passcode').value;
-            fetch('/api/admin/data', {
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+            fetch('/api/admin/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ passcode })
+                body: JSON.stringify({ email, password })
             })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    sessionStorage.setItem('admin-passcode', passcode);
+                    sessionStorage.setItem('admin-email', email);
+                    sessionStorage.setItem('admin-token', data.token);
                     document.getElementById('login-overlay').classList.add('hidden');
                     document.getElementById('dashboard-content').classList.remove('hidden');
-                    renderDashboard(data);
-                    window.dispatchEvent(new Event('admin-unlocked'));
+                    // Fetch dashboard data
+                    fetch('/api/admin/data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, token: data.token })
+                    }).then(r=>r.json()).then(dashData => {
+                        if(dashData.success) {
+                            renderDashboard(dashData);
+                            window.dispatchEvent(new Event('admin-unlocked'));
+                        }
+                    });
                 } else {
+                    document.getElementById('login-error').innerText = data.error || "Invalid Credentials";
                     document.getElementById('login-error').classList.remove('hidden');
                 }
             })
@@ -802,11 +838,55 @@
         });
 
         document.getElementById('logout-btn').addEventListener('click', () => {
-            sessionStorage.removeItem('admin-passcode');
-            document.getElementById('admin-passcode').value = '';
+            sessionStorage.removeItem('admin-email');
+            sessionStorage.removeItem('admin-token');
+            document.getElementById('admin-password').value = '';
             document.getElementById('dashboard-content').classList.add('hidden');
             document.getElementById('login-overlay').classList.remove('hidden');
+            document.getElementById('login-error').classList.add('hidden');
         });
+
+        window.showForgotPassword = function() {
+            document.getElementById('forgot-password-modal').classList.remove('hidden');
+            document.getElementById('fp-step-1').classList.remove('hidden');
+            document.getElementById('fp-step-2').classList.add('hidden');
+        };
+
+        window.hideForgotPassword = function() {
+            document.getElementById('forgot-password-modal').classList.add('hidden');
+        };
+
+        window.requestResetCode = function() {
+            const email = document.getElementById('fp-email').value;
+            if(!email) return alert("Enter your email");
+            fetch('/api/admin/forgot-password', {
+                method: 'POST', body: JSON.stringify({email})
+            }).then(r=>r.json()).then(d => {
+                if(d.success) {
+                    document.getElementById('fp-step-1').classList.add('hidden');
+                    document.getElementById('fp-step-2').classList.remove('hidden');
+                } else {
+                    alert(d.error || "Error requesting reset code");
+                }
+            });
+        };
+
+        window.resetPassword = function() {
+            const email = document.getElementById('fp-email').value;
+            const code = document.getElementById('fp-code').value;
+            const new_password = document.getElementById('fp-new-password').value;
+            if(!code || !new_password) return alert("Fill all fields");
+            fetch('/api/admin/reset-password', {
+                method: 'POST', body: JSON.stringify({email, code, new_password})
+            }).then(r=>r.json()).then(d => {
+                if(d.success) {
+                    alert("Password reset successfully! You can now log in.");
+                    hideForgotPassword();
+                } else {
+                    alert(d.error || "Error resetting password");
+                }
+            });
+        };
 
         function renderDashboard(data) {
             if (data.assistant_name) {
@@ -921,11 +1001,12 @@
             const newName = document.getElementById('admin-assistant-name').value.trim();
             if (!newName) return;
 
-            const passcode = sessionStorage.getItem('admin-passcode');
+            const email = sessionStorage.getItem('admin-email');
+            const token = sessionStorage.getItem('admin-token');
             fetch('/api/admin/config', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ passcode: passcode, assistant_name: newName })
+                body: JSON.stringify({ email: email, token: token, assistant_name: newName })
             })
             .then(res => res.json())
             .then(data => {
