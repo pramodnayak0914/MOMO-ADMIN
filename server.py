@@ -142,6 +142,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
 
     def authenticate_admin(self, data):
         email = data.get('email')
+        if email: email = email.strip().lower()
         token = data.get('token')
         if not email or not token:
             return False
@@ -172,6 +173,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
 
         if self.path == '/api/admin/login':
             email = data.get('email')
+            if email: email = email.strip().lower()
             password = data.get('password')
             if not email or not password:
                 return self._send_json(400, {"success": False, "error": "Email and password required"})
@@ -198,6 +200,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
 
         elif self.path == '/api/admin/forgot-password':
             email = data.get('email')
+            if email: email = email.strip().lower()
             if not email: return self._send_json(400, {"success": False, "error": "Email required"})
             if not psycopg2 or not DATABASE_URL:
                 return self._send_json(400, {"success": False, "error": "Database not configured"})
@@ -248,6 +251,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
 
         elif self.path == '/api/admin/reset-password':
             email = data.get('email')
+            if email: email = email.strip().lower()
             code = data.get('code')
             new_password = data.get('new_password')
             if not email or not code or not new_password:
