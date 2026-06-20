@@ -639,6 +639,9 @@
                         <p id="save-settings-msg" class="text-green-400 mt-3 text-sm hidden flex items-center gap-2">
                             <i data-lucide="check-circle" class="w-4 h-4"></i> Successfully updated!
                         </p>
+                        <p id="save-settings-error" class="text-red-500 mt-3 text-sm hidden flex items-center gap-2">
+                            <i data-lucide="alert-circle" class="w-4 h-4"></i> <span id="save-settings-error-text"></span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1058,14 +1061,20 @@
             })
             .then(res => res.json())
             .then(data => {
+                const msg = document.getElementById('save-settings-msg');
+                const errMsg = document.getElementById('save-settings-error');
                 if(data.success) {
-                    const msg = document.getElementById('save-settings-msg');
+                    if (errMsg) errMsg.classList.add('hidden');
                     msg.classList.remove('hidden');
                     setTimeout(() => {
                       if (msg) msg.classList.add('hidden');
                     }, 3000);
                 } else {
-                    alert('Error saving name: ' + data.error);
+                    if (msg) msg.classList.add('hidden');
+                    if (errMsg) {
+                        document.getElementById('save-settings-error-text').innerText = data.error || "Error saving name";
+                        errMsg.classList.remove('hidden');
+                    }
                 }
             })
             .catch(err => console.error(err));
