@@ -236,8 +236,14 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     urllib.request.urlopen(req, data=payload)
                 return self._send_json(200, {"success": True})
             except Exception as e:
-                print(f"Forgot password error: {e}")
-                return self._send_json(500, {"success": False, "error": str(e)})
+                error_msg = str(e)
+                if hasattr(e, 'read'):
+                    try:
+                        error_msg = e.read().decode('utf-8')
+                    except:
+                        pass
+                print(f"Forgot password error: {error_msg}")
+                return self._send_json(500, {"success": False, "error": f"Email service error: {error_msg}"})
 
         elif self.path == '/api/admin/reset-password':
             email = data.get('email')
