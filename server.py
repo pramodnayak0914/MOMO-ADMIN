@@ -269,10 +269,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         post_data_old = post_data
 
         if self.path == '/api/super-admin/promo':
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
             try:
-                data = json.loads(post_data)
                 if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
@@ -305,10 +302,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if self.path == '/api/super-admin/campaigns':
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
             try:
-                data = json.loads(post_data)
                 if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
@@ -338,10 +332,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             return
             
         if self.path == '/api/super-admin/data':
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
             try:
-                data = json.loads(post_data)
                 if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
@@ -448,14 +439,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if self.path == '/api/admin/data':
-            content_length = int(self.headers.get('Content-Length', 0))
-            if content_length == 0:
-                self._send_json(400, {"success": False, "error": "No payload"})
-                return
-            post_data = self.rfile.read(content_length)
-            
             try:
-                data = json.loads(post_data)
+                # Use data parsed at top of do_POST
                 if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
@@ -723,8 +708,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 print(f"Error fetching admin data: {e}")
                 self._send_json(500, {"success": False, "error": str(e)})
         elif self.path == '/api/admin/users/action':
-            content_length = int(self.headers.get('Content-Length', 0))
-            data = json.loads(self.rfile.read(content_length))
             if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
             action = data.get('action')
             phone = data.get('phone_number')
@@ -743,8 +726,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             return
             
         elif self.path == '/api/admin/recharges/status':
-            content_length = int(self.headers.get('Content-Length', 0))
-            data = json.loads(self.rfile.read(content_length))
             if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
             order_id = data.get('order_id')
             status = data.get('status')
@@ -761,8 +742,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(500, {"error": str(e)})
             return
         elif self.path == '/api/admin/recharges/retry':
-            content_length = int(self.headers.get('Content-Length', 0))
-            data = json.loads(self.rfile.read(content_length))
             if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
             order_id = data.get('order_id')
             try:
@@ -778,8 +757,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(500, {"error": str(e)})
             return
         elif self.path == '/api/admin/growth/save':
-            content_length = int(self.headers.get('Content-Length', 0))
-            data = json.loads(self.rfile.read(content_length))
             if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
             try:
                 if DATABASE_URL and psycopg2:
@@ -802,13 +779,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
 
 
         elif self.path == '/api/admin/config':
-            content_length = int(self.headers.get('Content-Length', 0))
-            if content_length == 0:
-                self._send_json(400, {"success": False, "error": "No payload"})
-                return
-            post_data = self.rfile.read(content_length)
             try:
-                data = json.loads(post_data)
+                # Use data parsed at top of do_POST
                 if not self.authenticate_admin(data):
                     self._send_json(401, {"success": False, "error": "Unauthorized"})
                     return
