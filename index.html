@@ -28,13 +28,24 @@
     </script>
     <script>
         window.showForgotPassword = function() {
-            document.getElementById('forgot-password-modal').classList.remove('hidden');
-            document.getElementById('fp-step-1').classList.remove('hidden');
-            document.getElementById('fp-step-2').classList.add('hidden');
+            const modal = document.getElementById('forgot-password-modal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.style.zIndex = '9999';
+            
+            const step1 = document.getElementById('fp-step-1');
+            step1.classList.remove('hidden');
+            step1.style.display = 'block';
+            
+            const step2 = document.getElementById('fp-step-2');
+            step2.classList.add('hidden');
+            step2.style.display = 'none';
         };
 
         window.hideForgotPassword = function() {
-            document.getElementById('forgot-password-modal').classList.add('hidden');
+            const modal = document.getElementById('forgot-password-modal');
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
         };
 
         window.requestResetCode = function() {
