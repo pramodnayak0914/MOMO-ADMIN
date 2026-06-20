@@ -99,9 +99,17 @@ def init_db():
         ''')
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
-                identifier VARCHAR(255) PRIMARY KEY,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                phone_number VARCHAR(20) PRIMARY KEY,
+                wallet_balance DECIMAL(10, 2) DEFAULT 0.00,
+                status VARCHAR(20) DEFAULT 'ACTIVE',
+                device_id VARCHAR(255),
+                last_ip VARCHAR(50),
+                login_location VARCHAR(255),
+                referral_code VARCHAR(20) UNIQUE,
+                referred_by VARCHAR(20),
+                loyalty_tier VARCHAR(20) DEFAULT 'Silver',
+                loyalty_points INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         conn.commit()
