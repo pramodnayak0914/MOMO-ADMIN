@@ -227,6 +227,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     req = urllib.request.Request("https://api.resend.com/emails", method="POST")
                     req.add_header("Authorization", f"Bearer {resend_key}")
                     req.add_header("Content-Type", "application/json")
+                    req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
                     payload = json.dumps({
                         "from": f"MOMO Admin Support <{support_email}>",
                         "to": [email],
