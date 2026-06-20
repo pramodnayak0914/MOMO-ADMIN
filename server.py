@@ -210,7 +210,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 cur.execute("SELECT email FROM admins WHERE email = %s", (email,))
                 if not cur.fetchone():
                     cur.close(); conn.close()
-                    return self._send_json(200, {"success": True}) # Don't reveal if email exists
+                    return self._send_json(400, {"success": False, "error": "This email is not registered as an Admin."})
                 
                 cur.execute("UPDATE admins SET reset_code = %s, reset_expires = %s WHERE email = %s", (code, expires, email))
                 conn.commit()
@@ -219,6 +219,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 # Send email via Resend
                 resend_key = os.environ.get('RESEND_API_KEY')
                 support_email = os.environ.get('SUPPORT_EMAIL', 'support@onlinerecharge-ai.com')
+                if not resend_key:
+                    return self._send_json(500, {"success": False, "error": "RESEND_API_KEY is missing from Render Environment Variables. Please add it."})
                 if resend_key:
                     import urllib.request
                     req = urllib.request.Request("https://api.resend.com/emails", method="POST")
