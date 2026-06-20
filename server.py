@@ -192,42 +192,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if self.path == '/api/super-admin/config-update':
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            try:
-                data = json.loads(post_data)
-                if data.get('passcode') != ADMIN_PASSCODE:
-                    self._send_json(401, {"success": False, "error": "Unauthorized"})
-                    return
-                key = data.get('key')
-                value = data.get('value')
-                
-                if not DATABASE_URL or not psycopg2:
-                    self._send_json(500, {"success": False, "error": "Database not configured"})
-                    return
-                    
-                conn = psycopg2.connect(DATABASE_URL)
-                cur = conn.cursor()
-                
-                cur.execute("SELECT value FROM app_config WHERE key = %s", (key,))
-                row = cur.fetchone()
-                old_value = row[0] if row else "None"
-                
-                cur.execute('''
-                    INSERT INTO app_config (key, value) 
-                    VALUES (%s, %s) 
-                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-                ''', (key, str(value)))
-                
-                cur.execute("INSERT INTO audit_logs (admin_email, action, details, ip_address) VALUES (%s, %s, %s, %s)",
-                            ("superadmin", f"Updated Config: {key}", f"Old: {old_value} -> New: {value}", self.client_address[0]))
-                
-                conn.commit()
-                cur.close()
-                conn.close()
-                self._send_json(200, {"success": True, "message": "Updated successfully"})
-            except Exception as e:
-                self._send_json(500, {"success": False, "error": str(e)})
+            self._send_json(403, {"success": False, "error": "This endpoint has been deprecated and moved to Super Admin portal."})
             return
             
         if self.path == '/api/super-admin/data':
