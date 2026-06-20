@@ -96,6 +96,21 @@
         </div>
     </div>
 
+    <!-- Custom Modal Overlay -->
+    <div id="custom-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-[#1a1a24] border border-red-500/30 rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-white/5 bg-red-500/10 flex items-center gap-3">
+                <h3 id="modal-title" class="text-red-400 font-bold flex items-center gap-2">⚠️ Confirm Action</h3>
+            </div>
+            <div class="p-6">
+                <p id="modal-message" class="text-slate-300 text-sm whitespace-pre-wrap mb-6 leading-relaxed"></p>
+                <div class="flex gap-3 justify-end" id="modal-buttons">
+                    <!-- Buttons injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main App Layout -->
     <div id="dashboard-content" class="hidden flex h-screen w-full">
         
@@ -626,20 +641,6 @@
             
             let html = `
                 <div class="glass-card rounded-xl overflow-hidden relative" style="min-height: 400px;">
-    <!-- Custom Modal Overlay -->
-    <div id="custom-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <div class="bg-[#1a1a24] border border-red-500/30 rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
-            <div class="p-4 border-b border-white/5 bg-red-500/10 flex items-center gap-3">
-                <h3 id="modal-title" class="text-red-400 font-bold flex items-center gap-2">⚠️ Confirm Action</h3>
-            </div>
-            <div class="p-6">
-                <p id="modal-message" class="text-slate-300 text-sm whitespace-pre-wrap mb-6 leading-relaxed"></p>
-                <div class="flex gap-3 justify-end" id="modal-buttons">
-                    <!-- Buttons injected here -->
-                </div>
-            </div>
-        </div>
-    </div>
 
                     <div class="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
                         <h2 class="text-lg font-bold">Support Center</h2>

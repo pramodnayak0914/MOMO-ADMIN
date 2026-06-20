@@ -794,6 +794,16 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor()
                 
+                if new_status == 'REFUNDED':
+                    cur.execute("SELECT value FROM app_config WHERE key = 'admin_permissions'")
+                    perm_row = cur.fetchone()
+                    perms = json.loads(perm_row[0]) if perm_row else {}
+                    if not perms.get('can_refund', True):
+                        self._send_json(403, {"success": False, "error": "Refund permission denied by Super Admin."})
+                        cur.close()
+                        conn.close()
+                        return
+
                 cur.execute("SELECT user_phone, status FROM support_tickets WHERE ticket_id = %s", (ticket_id,))
                 ticket_row = cur.fetchone()
                 
