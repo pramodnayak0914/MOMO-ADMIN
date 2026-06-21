@@ -441,13 +441,21 @@
                             <h2 class="text-xl font-bold">Payment Transactions</h2>
                             <p class="text-sm text-slate-400">Real-time logs from Cashfree.</p>
                         </div>
-                        <div class="flex gap-2">
-                            <select id="payment-status-filter" class="bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none">
-                                <option value="ALL">All Status</option>
-                                <option value="SUCCESS">Success</option>
-                                <option value="PENDING">Pending</option>
-                                <option value="FAILED">Failed</option>
-                            </select>
+                        <div class="relative inline-block text-left" id="custom-payment-filter-container">
+                            <button type="button" onclick="togglePaymentFilter()" class="flex items-center gap-2 bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white hover:bg-white/5 transition outline-none" id="custom-payment-filter-btn">
+                                <span id="custom-payment-filter-text">All Status</span>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                            </button>
+                            <input type="hidden" id="payment-status-filter" value="ALL">
+                            
+                            <div id="custom-payment-dropdown" class="origin-top-right absolute right-0 mt-2 w-36 rounded-lg shadow-lg shadow-black/50 bg-[#1a1a24] border border-white/10 ring-1 ring-black ring-opacity-5 hidden z-50">
+                                <div class="py-1" role="menu">
+                                    <button onclick="setPaymentFilter('ALL', 'All Status')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">All Status</button>
+                                    <button onclick="setPaymentFilter('SUCCESS', 'Success')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Success</button>
+                                    <button onclick="setPaymentFilter('PENDING', 'Pending')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Pending</button>
+                                    <button onclick="setPaymentFilter('FAILED', 'Failed')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Failed</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
@@ -1743,13 +1751,41 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    renderPayments(data.transactions, data.stats);
+                    window.paymentsData = data;
+                    renderPayments();
                 }
             })
             .catch(err => console.error(err));
         }
 
-        function renderPayments(txns, stats) {
+        function togglePaymentFilter() {
+            const dropdown = document.getElementById('custom-payment-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function setPaymentFilter(val, label) {
+            document.getElementById('payment-status-filter').value = val;
+            document.getElementById('custom-payment-filter-text').innerText = label;
+            document.getElementById('custom-payment-dropdown').classList.add('hidden');
+            renderPayments();
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const container = document.getElementById('custom-payment-filter-container');
+            if (container && !container.contains(event.target)) {
+                const dropdown = document.getElementById('custom-payment-dropdown');
+                if (dropdown) dropdown.classList.add('hidden');
+            }
+        });
+
+        function renderPayments() {
+            if (!window.paymentsData || !window.paymentsData.transactions) return;
+            const data = window.paymentsData;
+            const stats = data.stats;
+            const txns = data.transactions;
+            const filterVal = document.getElementById('payment-status-filter').value;
+
             document.getElementById('pay-stat-initiated').innerText = stats.initiated || 0;
             document.getElementById('pay-stat-success').innerText = (stats.success || 0) + ' Success';
             document.getElementById('pay-stat-failed').innerText = (stats.failed || 0) + ' Failed';
@@ -1759,7 +1795,10 @@
 
             const tbody = document.getElementById('payments-table-body');
             tbody.innerHTML = '';
-            txns.forEach(t => {
+            
+            const filteredTxns = filterVal === 'ALL' ? txns : txns.filter(t => t.payment_status === filterVal);
+            
+            filteredTxns.forEach(t => {
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
                 
