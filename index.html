@@ -252,17 +252,17 @@
                             <h2 class="text-lg font-bold">Recent Transactions</h2>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="data-table w-full">
-                                <thead>
+                            <table class="w-full text-left">
+                                <thead class="bg-white/5 text-slate-400 text-sm">
                                     <tr>
-                                        <th>Order ID</th>
-                                        <th>User Identifier</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
+                                        <th class="p-4">Order ID</th>
+                                        <th class="p-4">User Identifier</th>
+                                        <th class="p-4">Amount</th>
+                                        <th class="p-4">Status</th>
+                                        <th class="p-4">Date</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tx-table-body"></tbody>
+                                <tbody id="tx-table-body" class="divide-y divide-white/5"></tbody>
                             </table>
                         </div>
                     </div>
@@ -272,16 +272,16 @@
                             <h2 class="text-lg font-bold">Recent Plan Activations</h2>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="data-table w-full">
-                                <thead>
+                            <table class="w-full text-left">
+                                <thead class="bg-white/5 text-slate-400 text-sm">
                                     <tr>
-                                        <th>Target Account</th>
-                                        <th>Brand</th>
-                                        <th>Plan Type</th>
-                                        <th>Date</th>
+                                        <th class="p-4">Target Account</th>
+                                        <th class="p-4">Brand</th>
+                                        <th class="p-4">Plan Type</th>
+                                        <th class="p-4">Date</th>
                                     </tr>
                                 </thead>
-                                <tbody id="purchases-table-body"></tbody>
+                                <tbody id="purchases-table-body" class="divide-y divide-white/5"></tbody>
                             </table>
                         </div>
                     </div>
@@ -961,12 +961,12 @@
                 else if (tx.status.toLowerCase() === 'refunded') statusClass = 'failed'; // reuse failed class for red
 
                 txBody.innerHTML += `
-                    <tr>
-                        <td>${tx.order_id}</td>
-                        <td>${tx.user_identifier}</td>
-                        <td class="font-bold text-primary">₹${tx.amount.toFixed(2)}</td>
-                        <td><span class="badge ${statusClass}">${tx.status.toUpperCase()}</span></td>
-                        <td class="text-slate-400 text-sm">${new Date(tx.created_at).toLocaleString()}</td>
+                    <tr class="hover:bg-white/5 transition">
+                        <td class="p-4 text-slate-300 text-xs font-mono">${tx.order_id}</td>
+                        <td class="p-4 font-medium">${tx.user_identifier}</td>
+                        <td class="p-4 font-bold text-primary">₹${tx.amount.toFixed(2)}</td>
+                        <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${statusClass === 'success' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : statusClass === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' : 'bg-red-500/20 text-red-400 border border-red-500/50'}">${tx.status.toUpperCase()}</span></td>
+                        <td class="p-4 text-slate-400 text-sm">${new Date(tx.created_at).toLocaleString()}</td>
                     </tr>
                 `;
             });
@@ -988,11 +988,11 @@
             pBody.innerHTML = '';
             data.purchases.forEach(p => {
                 pBody.innerHTML += `
-                    <tr>
-                        <td class="font-semibold">${p.user_identifier}</td>
-                        <td>${p.brand_name}</td>
-                        <td><span class="badge" style="background: rgba(255,255,255,0.1); color: white;">${p.flow_type.toUpperCase()}</span></td>
-                        <td class="text-slate-400 text-sm">${new Date(p.created_at).toLocaleString()}</td>
+                    <tr class="hover:bg-white/5 transition">
+                        <td class="p-4 font-semibold">${p.user_identifier}</td>
+                        <td class="p-4 text-slate-300">${p.brand_name || '-'}</td>
+                        <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold bg-white/10 text-white border border-white/20">${p.flow_type.toUpperCase()}</span></td>
+                        <td class="p-4 text-slate-400 text-sm">${new Date(p.created_at).toLocaleString()}</td>
                     </tr>
                 `;
             });
