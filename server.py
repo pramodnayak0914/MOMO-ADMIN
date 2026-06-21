@@ -171,7 +171,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         except Exception:
             data = {}
 
-        if self.path == '/api/admin/login':
+        if self.path in ('/api/admin/login', '/api/auth/login'):
             email = data.get('email')
             if email: email = email.strip().lower()
             password = data.get('password')
