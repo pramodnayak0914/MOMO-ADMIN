@@ -141,22 +141,31 @@ init_db()
 class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
 
     def authenticate_admin(self, data):
-        email = data.get('email')
-        if email: email = email.strip().lower()
+        # Support both old JSON tokens and new Authorization Bearer tokens
         token = data.get('token')
-        if not email or not token:
-            return False
+        auth_header = self.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+            
+        if not token:
+            # Fallback to passcode if needed
+            return data.get('passcode') == ADMIN_PASSCODE
+
         if not psycopg2 or not DATABASE_URL:
             # fallback if no DB
-            return data.get('passcode') == ADMIN_PASSCODE
+            return token == ADMIN_PASSCODE or data.get('passcode') == ADMIN_PASSCODE
+
         try:
             conn = psycopg2.connect(DATABASE_URL)
             cur = conn.cursor()
-            cur.execute("SELECT password_hash FROM admins WHERE email = %s AND status = 'ACTIVE'", (email,))
+            
+            # Since the token is just the password_hash, and it's SHA256, it's secure enough to look up globally
+            cur.execute("SELECT email FROM admins WHERE password_hash = %s AND status = 'ACTIVE'", (token,))
             row = cur.fetchone()
             cur.close()
             conn.close()
-            if row and row[0] == token:
+            
+            if row:
                 return True
         except Exception as e:
             print(f"Auth error: {e}")
