@@ -140,6 +140,44 @@
         </div>
     </div>
 
+    <!-- Admin Confirm Modal -->
+    <div id="admin-confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 hidden">
+        <div class="bg-[#1a1a24] border border-red-500/30 rounded-xl max-w-sm w-full shadow-2xl overflow-hidden text-center">
+            <div class="p-6">
+                <div class="w-12 h-12 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Confirm Action</h3>
+                <p id="admin-confirm-message" class="text-slate-300 text-sm mb-6"></p>
+                <div class="flex gap-3">
+                    <button onclick="handleAdminConfirm(false)" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold transition">Cancel</button>
+                    <button onclick="handleAdminConfirm(true)" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentConfirmResolve = null;
+
+        function adminConfirm(message) {
+            return new Promise((resolve) => {
+                document.getElementById('admin-confirm-message').innerText = message;
+                document.getElementById('admin-confirm-modal').classList.remove('hidden');
+                lucide.createIcons();
+                currentConfirmResolve = resolve;
+            });
+        }
+
+        function handleAdminConfirm(result) {
+            document.getElementById('admin-confirm-modal').classList.add('hidden');
+            if (currentConfirmResolve) {
+                currentConfirmResolve(result);
+                currentConfirmResolve = null;
+            }
+        }
+    </script>
+
     <!-- Main App Layout -->
     <div id="dashboard-content" class="hidden flex h-screen w-full">
         
@@ -1140,8 +1178,9 @@
             document.getElementById('user-details-modal').classList.add('hidden');
         }
 
-        function userAction(phone, action) {
-            if (!confirm(`Are you sure you want to ${action} user ${phone}?`)) return;
+        async function userAction(phone, action) {
+            const confirmed = await adminConfirm(`Are you sure you want to ${action} user ${phone}?`);
+            if (!confirmed) return;
             const token = sessionStorage.getItem('admin-token');
             fetch('/api/admin/users/action', {
                 method: 'POST',
@@ -1161,8 +1200,9 @@
             });
         }
 
-        function resetUser(phone) {
-            if (!confirm(`Resetting binding for ${phone} will clear their device_id and allow login from a new device. Continue?`)) return;
+        async function resetUser(phone) {
+            const confirmed = await adminConfirm(`Resetting binding for ${phone} will clear their device_id and allow login from a new device. Continue?`);
+            if (!confirmed) return;
             const token = sessionStorage.getItem('admin-token');
             fetch('/api/admin/users/action', {
                 method: 'POST',
@@ -1231,10 +1271,12 @@
             document.getElementById('recharge-details-modal').classList.add('hidden');
         }
 
-        function rechargeAction(orderId, action, forcedStatus = null) {
+        async function rechargeAction(orderId, action, forcedStatus = null) {
             let msg = `Are you sure you want to ${action} this transaction?`;
             if(action === 'force_status') msg = `DANGER: Are you sure you want to force status to ${forcedStatus} without API validation?`;
-            if(!confirm(msg)) return;
+            
+            const confirmed = await adminConfirm(msg);
+            if(!confirmed) return;
             
             const token = sessionStorage.getItem('admin-token');
             const payload = { action: action, order_id: orderId };
