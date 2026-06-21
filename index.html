@@ -960,9 +960,17 @@
                 else if (tx.status.toLowerCase() === 'failed') statusClass = 'failed';
                 else if (tx.status.toLowerCase() === 'refunded') statusClass = 'failed'; // reuse failed class for red
 
+                let orderIcon = '';
+                if (tx.order_id.startsWith('MOB_')) orderIcon = '📱 ';
+                else if (tx.order_id.startsWith('OTT_')) orderIcon = '🍿 ';
+                else if (tx.order_id.startsWith('UTL_')) orderIcon = '💡 ';
+                else if (tx.order_id.startsWith('WALLET_')) orderIcon = '💳 ';
+                else if (tx.order_id.startsWith('AUTO-')) orderIcon = '🤖 ';
+                else if (tx.order_id.startsWith('FAM-')) orderIcon = '👨‍👩‍👧 ';
+
                 txBody.innerHTML += `
                     <tr class="hover:bg-white/5 transition">
-                        <td class="p-4 text-slate-300 text-xs font-mono">${tx.order_id}</td>
+                        <td class="p-4 text-slate-300 text-xs font-mono"><span class="mr-1">${orderIcon}</span>${tx.order_id}</td>
                         <td class="p-4 font-medium">${tx.user_identifier}</td>
                         <td class="p-4 font-bold text-primary">₹${tx.amount.toFixed(2)}</td>
                         <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${statusClass === 'success' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : statusClass === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' : 'bg-red-500/20 text-red-400 border border-red-500/50'}">${tx.status.toUpperCase()}</span></td>
