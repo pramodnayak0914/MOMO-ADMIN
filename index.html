@@ -210,7 +210,15 @@
                 </div>
                 <div class="sidebar-item" data-tab="tab-payments">
                     <i data-lucide="credit-card" class="w-5 h-5"></i>
-                    <span>Payment Logs</span>
+                    <span>Payment Dashboard</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-refunds">
+                    <i data-lucide="refresh-ccw" class="w-5 h-5"></i>
+                    <span>Refund Queue</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-settlements">
+                    <i data-lucide="landmark" class="w-5 h-5"></i>
+                    <span>Settlement Reports</span>
                 </div>
                 <div class="sidebar-item" data-tab="tab-fraud">
                     <i data-lucide="shield-alert" class="w-5 h-5 text-red-400"></i>
@@ -398,22 +406,125 @@
 
             <!-- NEW TAB: PAYMENTS -->
             <div id="tab-payments" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all"></div>
+                        <h3 class="text-slate-400 text-sm font-medium mb-1">Initiated Payments</h3>
+                        <div class="text-3xl font-bold text-white mb-2" id="pay-stat-initiated">0</div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="text-emerald-400 font-medium" id="pay-stat-success">0 Success</span>
+                            <span class="text-slate-500">•</span>
+                            <span class="text-red-400 font-medium" id="pay-stat-failed">0 Failed</span>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+                        <h3 class="text-slate-400 text-sm font-medium mb-1">Total Revenue</h3>
+                        <div class="text-3xl font-bold text-white mb-2" id="pay-stat-revenue">₹0.00</div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="text-emerald-400 font-medium flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> Settled: <span id="pay-stat-settled">₹0</span></span>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/20 transition-all"></div>
+                        <h3 class="text-slate-400 text-sm font-medium mb-1">Refunds Processed</h3>
+                        <div class="text-3xl font-bold text-white mb-2" id="pay-stat-refunds">₹0.00</div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <button onclick="switchTab('tab-refunds')" class="text-rose-400 hover:text-rose-300 font-medium flex items-center gap-1 transition-colors">View Queue <i data-lucide="arrow-right" class="w-3 h-3"></i></button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="glass-card rounded-xl overflow-hidden mb-8">
-                    <div class="p-6 border-b border-white/10">
-                        <h2 class="text-xl font-bold">Payment Gateway Logs (Cashfree)</h2>
-                        <p class="text-sm text-slate-400">Payment intent and settlement status synced with recharges.</p>
+                    <div class="p-6 border-b border-white/10 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-bold">Payment Transactions</h2>
+                            <p class="text-sm text-slate-400">Real-time logs from Cashfree.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="payment-status-filter" class="bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none">
+                                <option value="ALL">All Status</option>
+                                <option value="SUCCESS">Success</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="FAILED">Failed</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse react-table">
                             <thead>
                                 <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
                                     <th class="p-4 font-semibold">Order ID</th>
-                                    <th class="p-4 font-semibold">Gateway Status</th>
-                                    <th class="p-4 font-semibold">Amount Settled</th>
-                                    <th class="p-4 font-semibold">Created At</th>
+                                    <th class="p-4 font-semibold">CF Payment ID</th>
+                                    <th class="p-4 font-semibold">Amount</th>
+                                    <th class="p-4 font-semibold">Payment Status</th>
+                                    <th class="p-4 font-semibold">Recharge Status</th>
+                                    <th class="p-4 font-semibold">Date</th>
                                 </tr>
                             </thead>
                             <tbody id="payments-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW TAB: REFUNDS -->
+            <div id="tab-refunds" class="tab-content hidden">
+                <div class="glass-card rounded-xl overflow-hidden mb-8 border border-rose-500/20">
+                    <div class="p-6 border-b border-white/10 bg-rose-500/5 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-rose-400 flex items-center gap-2">
+                                <i data-lucide="refresh-ccw" class="w-6 h-6"></i>
+                                Refund Queue
+                            </h2>
+                            <p class="text-sm text-slate-400 mt-1">Manage user refunds for failed recharges.</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse react-table">
+                            <thead>
+                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
+                                    <th class="p-4 font-semibold">Order ID</th>
+                                    <th class="p-4 font-semibold">Amount</th>
+                                    <th class="p-4 font-semibold">Reason</th>
+                                    <th class="p-4 font-semibold">Status</th>
+                                    <th class="p-4 font-semibold">Date</th>
+                                    <th class="p-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="refunds-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW TAB: SETTLEMENTS -->
+            <div id="tab-settlements" class="tab-content hidden">
+                <div class="glass-card rounded-xl overflow-hidden mb-8 border border-indigo-500/20">
+                    <div class="p-6 border-b border-white/10 bg-indigo-500/5 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-indigo-400 flex items-center gap-2">
+                                <i data-lucide="landmark" class="w-6 h-6"></i>
+                                Settlement Reports
+                            </h2>
+                            <p class="text-sm text-slate-400 mt-1">Daily reconciliation of collections vs gateway fees.</p>
+                        </div>
+                        <button onclick="exportSettlementsCSV()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse react-table">
+                            <thead>
+                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
+                                    <th class="p-4 font-semibold">Date</th>
+                                    <th class="p-4 font-semibold">Collection</th>
+                                    <th class="p-4 font-semibold">Fees</th>
+                                    <th class="p-4 font-semibold">Net Settlement</th>
+                                    <th class="p-4 font-semibold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="settlements-table-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -1611,6 +1722,177 @@
             })
             .catch(err => console.error(err));
         });
+
+        // ==========================================
+        // CASHFREE PAYMENT & RECONCILIATION MODULE
+        // ==========================================
+
+        window.addEventListener('admin-unlocked', () => {
+            fetchPaymentsData();
+            fetchRefundsData();
+            fetchSettlementsData();
+        });
+
+        function fetchPaymentsData() {
+            const token = sessionStorage.getItem('admin-token');
+            fetch('/api/admin/payments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    renderPayments(data.transactions, data.stats);
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        function renderPayments(txns, stats) {
+            document.getElementById('pay-stat-initiated').innerText = stats.initiated || 0;
+            document.getElementById('pay-stat-success').innerText = (stats.success || 0) + ' Success';
+            document.getElementById('pay-stat-failed').innerText = (stats.failed || 0) + ' Failed';
+            document.getElementById('pay-stat-revenue').innerText = '₹' + (stats.revenue || 0).toLocaleString();
+            document.getElementById('pay-stat-refunds').innerText = '₹' + (stats.refunds_amount || 0).toLocaleString();
+            document.getElementById('pay-stat-settled').innerText = '₹' + (stats.settlements_amount || 0).toLocaleString();
+
+            const tbody = document.getElementById('payments-table-body');
+            tbody.innerHTML = '';
+            txns.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
+                
+                const pStatusColor = t.payment_status === 'SUCCESS' ? 'text-emerald-400' : (t.payment_status === 'FAILED' ? 'text-rose-400' : 'text-amber-400');
+                const rStatusColor = t.recharge_status === 'SUCCESS' ? 'text-emerald-400' : (t.recharge_status === 'FAILED' ? 'text-rose-400' : 'text-amber-400');
+
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-xs text-slate-300">${t.order_id}</td>
+                    <td class="p-4 font-mono text-xs text-slate-300">${t.gateway_txn_id || 'N/A'}</td>
+                    <td class="p-4 font-medium text-white">₹${t.amount}</td>
+                    <td class="p-4 font-semibold ${pStatusColor}">${t.payment_status}</td>
+                    <td class="p-4 font-semibold ${rStatusColor}">${t.recharge_status}</td>
+                    <td class="p-4 text-slate-400 text-sm">${new Date(t.created_at).toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function fetchRefundsData() {
+            const token = sessionStorage.getItem('admin-token');
+            fetch('/api/admin/refunds', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const tbody = document.getElementById('refunds-table-body');
+                    tbody.innerHTML = '';
+                    data.refunds.forEach(r => {
+                        const tr = document.createElement('tr');
+                        tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
+                        const statusColor = r.status === 'Approved' || r.status === 'Refunded' ? 'text-emerald-400' : (r.status === 'Rejected' ? 'text-rose-400' : 'text-amber-400');
+                        
+                        let actionsHtml = '';
+                        if (r.status === 'Pending') {
+                            actionsHtml = `
+                                <button onclick="handleRefundAction(${r.id}, 'approve')" class="px-2 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded text-xs transition">Approve</button>
+                                <button onclick="handleRefundAction(${r.id}, 'reject')" class="px-2 py-1 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded text-xs transition">Reject</button>
+                            `;
+                        } else {
+                            actionsHtml = `<span class="text-slate-500 text-xs">${r.processed_by || 'Auto'}</span>`;
+                        }
+
+                        tr.innerHTML = `
+                            <td class="p-4 font-mono text-xs text-slate-300">${r.order_id}</td>
+                            <td class="p-4 font-medium text-white">₹${r.amount}</td>
+                            <td class="p-4 text-slate-300 text-sm">${r.reason}</td>
+                            <td class="p-4 font-semibold ${statusColor}">${r.status}</td>
+                            <td class="p-4 text-slate-400 text-sm">${new Date(r.created_at).toLocaleString()}</td>
+                            <td class="p-4 text-right flex justify-end gap-2">${actionsHtml}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        function handleRefundAction(refundId, action) {
+            const token = sessionStorage.getItem('admin-token');
+            fetch('/api/admin/refunds/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ refund_id: refundId, action: action })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Refund ' + action + 'd successfully');
+                    fetchRefundsData();
+                } else {
+                    showToast(data.error || 'Action failed', 'error');
+                }
+            })
+            .catch(err => showToast('Error processing refund', 'error'));
+        }
+
+        function fetchSettlementsData() {
+            const token = sessionStorage.getItem('admin-token');
+            fetch('/api/admin/settlements', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const tbody = document.getElementById('settlements-table-body');
+                    tbody.innerHTML = '';
+                    data.settlements.forEach(s => {
+                        const tr = document.createElement('tr');
+                        tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
+                        const statusColor = s.status === 'SUCCESS' ? 'text-emerald-400' : 'text-amber-400';
+                        
+                        tr.innerHTML = `
+                            <td class="p-4 text-white">${s.date}</td>
+                            <td class="p-4 font-medium text-slate-300">₹${s.total_collection}</td>
+                            <td class="p-4 font-medium text-rose-400">₹${s.fees}</td>
+                            <td class="p-4 font-bold text-emerald-400">₹${s.net_settlement}</td>
+                            <td class="p-4 font-semibold ${statusColor}">${s.status}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        function exportSettlementsCSV() {
+            const token = sessionStorage.getItem('admin-token');
+            fetch('/api/admin/settlements/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({})
+            })
+            .then(res => {
+                if (res.ok) return res.blob();
+                throw new Error('Failed to export CSV. Insufficient permissions?');
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'settlements.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(err => showToast(err.message, 'error'));
+        }
 
         // Mobile Menu Toggle Logic
         document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {

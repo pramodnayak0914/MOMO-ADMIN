@@ -133,9 +133,48 @@ def init_db():
                 order_id VARCHAR(50) PRIMARY KEY,
                 amount DECIMAL(10, 2) NOT NULL,
                 status VARCHAR(20) DEFAULT 'pending',
+                payment_status VARCHAR(20) DEFAULT 'PENDING',
+                recharge_status VARCHAR(20) DEFAULT 'PENDING',
+                gateway_txn_id VARCHAR(100),
+                webhook_received BOOLEAN DEFAULT FALSE,
                 user_identifier VARCHAR(255) NOT NULL,
                 user_phone VARCHAR(20),
                 profit DECIMAL(10, 2) DEFAULT 0.00,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        try:
+            cur.execute("ALTER TABLE transactions ADD COLUMN profit DECIMAL(10, 2) DEFAULT 0.00")
+        except Exception:
+            pass
+        try:
+            cur.execute("ALTER TABLE transactions ADD COLUMN payment_status VARCHAR(20) DEFAULT 'PENDING'")
+            cur.execute("ALTER TABLE transactions ADD COLUMN recharge_status VARCHAR(20) DEFAULT 'PENDING'")
+            cur.execute("ALTER TABLE transactions ADD COLUMN gateway_txn_id VARCHAR(100)")
+            cur.execute("ALTER TABLE transactions ADD COLUMN webhook_received BOOLEAN DEFAULT FALSE")
+        except Exception:
+            pass
+            
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS refunds (
+                id SERIAL PRIMARY KEY,
+                order_id VARCHAR(50) NOT NULL,
+                amount DECIMAL(10, 2) NOT NULL,
+                reason TEXT,
+                status VARCHAR(20) DEFAULT 'Pending',
+                processed_by VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS settlements (
+                id SERIAL PRIMARY KEY,
+                date DATE NOT NULL UNIQUE,
+                total_collection DECIMAL(10, 2) DEFAULT 0.00,
+                fees DECIMAL(10, 2) DEFAULT 0.00,
+                net_settlement DECIMAL(10, 2) DEFAULT 0.00,
+                status VARCHAR(20) DEFAULT 'PENDING',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -194,27 +233,31 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             
         if not token:
             # Fallback to passcode if needed
-            return data.get('passcode') == ADMIN_PASSCODE
+            if data.get('passcode') == ADMIN_PASSCODE:
+                return {"email": "local", "role": "superadmin"}
+            return None
 
         if not psycopg2 or not DATABASE_URL:
             # fallback if no DB
-            return token == ADMIN_PASSCODE or data.get('passcode') == ADMIN_PASSCODE
+            if token == ADMIN_PASSCODE or data.get('passcode') == ADMIN_PASSCODE:
+                return {"email": "local", "role": "superadmin"}
+            return None
 
         try:
             conn = psycopg2.connect(DATABASE_URL)
             cur = conn.cursor()
             
             # Since the token is just the password_hash, and it's SHA256, it's secure enough to look up globally
-            cur.execute("SELECT email FROM admins WHERE password_hash = %s AND status = 'ACTIVE'", (token,))
+            cur.execute("SELECT email, role FROM admins WHERE password_hash = %s AND status = 'ACTIVE'", (token,))
             row = cur.fetchone()
             cur.close()
             conn.close()
             
             if row:
-                return True
+                return {"email": row[0], "role": row[1]}
         except Exception as e:
             print(f"Auth error: {e}")
-        return False
+        return None
 
     def _read_body(self):
         content_length = int(self.headers.get('Content-Length', 0))
@@ -946,8 +989,172 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 conn.close()
                 self._send_json(200, {"success": True})
             except Exception as e:
-                print(f"Error setting config: {e}")
                 self._send_json(500, {"success": False, "error": str(e)})
+            return
+
+        elif self.path == '/api/admin/payments':
+            admin = self.authenticate_admin(data)
+            if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                
+                # Fetch recent transactions
+                cur.execute("SELECT * FROM transactions ORDER BY created_at DESC LIMIT 100")
+                txns = cur.fetchall()
+                for t in txns:
+                    if 'created_at' in t and t['created_at']: t['created_at'] = t['created_at'].isoformat()
+                
+                # Fetch stats
+                cur.execute("SELECT COUNT(*) as c FROM transactions WHERE created_at >= CURRENT_DATE")
+                initiated = cur.fetchone()['c']
+                
+                cur.execute("SELECT COUNT(*) as c FROM transactions WHERE payment_status = 'SUCCESS' AND created_at >= CURRENT_DATE")
+                success = cur.fetchone()['c']
+                
+                cur.execute("SELECT COUNT(*) as c FROM transactions WHERE payment_status = 'FAILED' AND created_at >= CURRENT_DATE")
+                failed = cur.fetchone()['c']
+                
+                cur.execute("SELECT COALESCE(SUM(amount), 0) as r FROM transactions WHERE payment_status = 'SUCCESS' AND created_at >= CURRENT_DATE")
+                revenue = float(cur.fetchone()['r'])
+                
+                cur.execute("SELECT COALESCE(SUM(amount), 0) as r FROM refunds WHERE status = 'Refunded' AND created_at >= CURRENT_DATE")
+                refunds_amount = float(cur.fetchone()['r'])
+                
+                cur.execute("SELECT COALESCE(SUM(net_settlement), 0) as r FROM settlements WHERE status = 'SUCCESS' AND date >= CURRENT_DATE")
+                settlements_amount = float(cur.fetchone()['r'])
+                
+                stats = {
+                    "initiated": initiated,
+                    "success": success,
+                    "failed": failed,
+                    "revenue": revenue,
+                    "refunds_amount": refunds_amount,
+                    "settlements_amount": settlements_amount
+                }
+                
+                cur.close()
+                conn.close()
+                return self._send_json(200, {"success": True, "transactions": txns, "stats": stats})
+            except Exception as e:
+                return self._send_json(500, {"error": str(e)})
+
+        elif self.path == '/api/admin/refunds':
+            admin = self.authenticate_admin(data)
+            if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("SELECT * FROM refunds ORDER BY created_at DESC LIMIT 100")
+                refunds = cur.fetchall()
+                for r in refunds:
+                    if 'created_at' in r and r['created_at']: r['created_at'] = r['created_at'].isoformat()
+                cur.close()
+                conn.close()
+                return self._send_json(200, {"success": True, "refunds": refunds})
+            except Exception as e:
+                return self._send_json(500, {"error": str(e)})
+                
+        elif self.path == '/api/admin/refunds/action':
+            admin = self.authenticate_admin(data)
+            if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            if admin['role'] not in ['finance', 'superadmin', 'admin']:
+                return self._send_json(403, {"error": "Forbidden. Finance or Superadmin role required to approve refunds."})
+            
+            refund_id = data.get('refund_id')
+            action = data.get('action')
+            if not refund_id or action not in ['approve', 'reject']:
+                return self._send_json(400, {"error": "Invalid refund_id or action"})
+                
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor()
+                new_status = 'Approved' if action == 'approve' else 'Rejected'
+                cur.execute("UPDATE refunds SET status = %s, processed_by = %s WHERE id = %s AND status = 'Pending'", (new_status, admin['email'], refund_id))
+                if cur.rowcount == 0:
+                    conn.rollback()
+                    return self._send_json(400, {"error": "Refund already processed or not found"})
+                conn.commit()
+                cur.close()
+                conn.close()
+                return self._send_json(200, {"success": True})
+            except Exception as e:
+                return self._send_json(500, {"error": str(e)})
+
+        elif self.path == '/api/admin/refunds/initiate':
+            admin = self.authenticate_admin(data)
+            if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            if admin['role'] not in ['operations', 'superadmin', 'admin']:
+                return self._send_json(403, {"error": "Forbidden. Operations role required."})
+            
+            order_id = data.get('order_id')
+            reason = data.get('reason', 'User requested')
+            if not order_id:
+                return self._send_json(400, {"error": "order_id required"})
+            
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor()
+                cur.execute("SELECT amount FROM transactions WHERE order_id = %s", (order_id,))
+                row = cur.fetchone()
+                if not row:
+                    return self._send_json(404, {"error": "Order not found"})
+                amount = row[0]
+                cur.execute("INSERT INTO refunds (order_id, amount, reason, status) VALUES (%s, %s, %s, 'Pending')", (order_id, amount, reason))
+                conn.commit()
+                cur.close()
+                conn.close()
+                return self._send_json(200, {"success": True})
+            except Exception as e:
+                return self._send_json(500, {"error": str(e)})
+
+        elif self.path == '/api/admin/settlements':
+            admin = self.authenticate_admin(data)
+            if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            if admin['role'] not in ['finance', 'superadmin', 'admin']:
+                return self._send_json(403, {"error": "Forbidden. Finance role required."})
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("SELECT * FROM settlements ORDER BY date DESC LIMIT 30")
+                settlements = cur.fetchall()
+                for s in settlements:
+                    if 'created_at' in s and s['created_at']: s['created_at'] = s['created_at'].isoformat()
+                    if 'date' in s and s['date']: s['date'] = str(s['date'])
+                cur.close()
+                conn.close()
+                return self._send_json(200, {"success": True, "settlements": settlements})
+            except Exception as e:
+                return self._send_json(500, {"error": str(e)})
+
+        elif self.path == '/api/admin/settlements/export':
+            admin = self.authenticate_admin(data)
+            if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            if admin['role'] not in ['finance', 'superadmin', 'admin']:
+                return self._send_json(403, {"error": "Forbidden. Finance role required."})
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("SELECT date, total_collection, fees, net_settlement, status FROM settlements ORDER BY date DESC")
+                settlements = cur.fetchall()
+                cur.close()
+                conn.close()
+                
+                # Generate CSV string
+                csv_data = "Date,Total Collection,Fees,Net Settlement,Status\n"
+                for s in settlements:
+                    csv_data += f"{s['date']},{s['total_collection']},{s['fees']},{s['net_settlement']},{s['status']}\n"
+                
+                # Send as plain text so the frontend can download it
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/csv')
+                self.send_header('Content-Disposition', 'attachment; filename="settlements.csv"')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(csv_data.encode('utf-8'))
+                return
+            except Exception as e:
+                return self._send_json(500, {"error": str(e)})
         else:
             self.send_response(404)
             self.end_headers()
