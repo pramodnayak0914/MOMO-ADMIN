@@ -301,7 +301,7 @@
                                     <th class="p-4 font-semibold">Phone</th>
                                     <th class="p-4 font-semibold">Status</th>
                                     <th class="p-4 font-semibold">Created At</th>
-                                    <th class="p-4 font-semibold text-right">Actions</th>
+                                    <th class="p-4 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="users-table-body"></tbody>
@@ -1008,16 +1008,19 @@
 
         function openUserModal(phone) {
             if (!window.globalData || !window.globalData.users) return;
-            const user = window.globalData.users.find(u => u.phone_number === phone);
+            const user = window.globalData.users.find(u => (u.phone_number || u.mobile) === phone);
             if (!user) return;
 
-            document.getElementById('um-phone').innerText = user.phone_number;
-            document.getElementById('um-joined').innerText = 'Joined: ' + new Date(user.created_at).toLocaleDateString();
+            const userPhone = user.phone_number || user.mobile || 'Unknown';
+            document.getElementById('um-phone').innerText = userPhone;
+            document.getElementById('um-joined').innerText = 'Joined: ' + (user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A');
             document.getElementById('um-wallet').innerText = '₹' + (user.wallet_balance || 0).toFixed(2);
             document.getElementById('um-loyalty').innerText = user.loyalty_tier || 'Silver';
-            document.getElementById('um-status').innerText = user.status || 'ACTIVE';
             
-            const isSuspended = user.status === 'SUSPENDED';
+            const status = user.status || (user.suspended ? 'SUSPENDED' : 'ACTIVE');
+            document.getElementById('um-status').innerText = status;
+            
+            const isSuspended = status === 'SUSPENDED';
             if (isSuspended) {
                 document.getElementById('um-status').className = 'text-2xl font-bold text-rose-500';
             } else {
@@ -1027,14 +1030,14 @@
             // Render Actions
             const actionsDiv = document.getElementById('um-actions');
             actionsDiv.innerHTML = `
-                <button onclick="resetUser('${user.phone_number}')" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition flex items-center gap-2">
+                <button onclick="resetUser('${userPhone}')" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition flex items-center gap-2">
                     <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reset Binding
                 </button>
                 ${isSuspended ? 
-                `<button onclick="userAction('${user.phone_number}', 'activate')" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                `<button onclick="userAction('${userPhone}', 'activate')" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
                     <i data-lucide="check-circle" class="w-4 h-4"></i> Activate
                 </button>` : 
-                `<button onclick="userAction('${user.phone_number}', 'suspend')" class="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                `<button onclick="userAction('${userPhone}', 'suspend')" class="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
                     <i data-lucide="ban" class="w-4 h-4"></i> Suspend
                 </button>`}
             `;
@@ -1133,21 +1136,25 @@
                 return;
             }
             data.users.forEach(u => {
-                const isSuspended = u.status === 'SUSPENDED';
+                const phone = u.phone_number || u.mobile || 'Unknown';
+                const status = u.status || (u.suspended ? 'SUSPENDED' : 'ACTIVE');
+                const isSuspended = status === 'SUSPENDED';
                 const statusBadge = isSuspended ? 
                     '<span class="px-2 py-1 bg-rose-500/20 text-rose-400 text-xs rounded-full border border-rose-500/30">Suspended</span>' : 
                     '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30">Active</span>';
+                
+                const createdAt = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A';
                 
                 tbody.innerHTML += `
                     <tr class="hover:bg-white/5 transition border-b border-white/5 last:border-0">
                         <td class="p-4 font-medium flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary"><i data-lucide="user" class="w-4 h-4"></i></div>
-                            ${u.phone_number}
+                            ${phone}
                         </td>
                         <td class="p-4">${statusBadge}</td>
-                        <td class="p-4 text-sm text-slate-400">${new Date(u.created_at).toLocaleDateString()}</td>
-                        <td class="p-4 text-right">
-                            <button onclick="openUserModal('${u.phone_number}')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition">
+                        <td class="p-4 text-sm text-slate-400">${createdAt}</td>
+                        <td class="p-4">
+                            <button onclick="openUserModal('${phone}')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition">
                                 Manage
                             </button>
                         </td>
