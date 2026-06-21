@@ -10,6 +10,17 @@ try:
 except ImportError:
     psycopg2 = None
 
+import decimal
+import datetime
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, decimal.Decimal):
+            return float(obj)
+        if isinstance(obj, (datetime.datetime, datetime.date)):
+            return obj.isoformat()
+        return super().default(obj)
+
 PORT = int(os.environ.get('PORT', 8080))
 DATABASE_URL = os.environ.get('DATABASE_URL')
 ADMIN_PASSCODE = os.environ.get('ADMIN_PASSCODE', 'admin123')
@@ -1022,6 +1033,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/api/admin/payments':
             admin = self.authenticate_admin(data)
             if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            if not DATABASE_URL or not psycopg2:
+                return self._send_json(200, {"success": True, "transactions": [], "stats": {"initiated": 0, "success": 0, "pending": 0, "failed": 0, "revenue": 0, "refunds_amount": 0, "settlements_amount": 0}})
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -1073,6 +1086,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/api/admin/refunds':
             admin = self.authenticate_admin(data)
             if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            if not DATABASE_URL or not psycopg2:
+                return self._send_json(200, {"success": True, "refunds": []})
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -1151,6 +1166,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             if not admin: return self._send_json(401, {"error": "Unauthorized"})
             if admin['role'] not in ['finance', 'superadmin', 'admin']:
                 return self._send_json(403, {"error": "Forbidden. Finance role required."})
+            if not DATABASE_URL or not psycopg2:
+                return self._send_json(200, {"success": True, "settlements": []})
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -1284,11 +1301,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             user_phone = query_params.get('user_phone', [None])[0]
             
             if not DATABASE_URL or not psycopg2:
-                self._send_json(500, {"success": False, "error": "Database not configured"})
-                return
+                return self._send_json(200, {"success": True, "tickets": []})
             try:
-                if not DATABASE_URL or not psycopg2:
-                    return self._send_json(200, {"success": True, "total_profit": 0, "audit_logs": [], "promo_codes": [], "api_provider": {"provider": "Local", "commission_margin": 0}})
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
                 
@@ -1445,7 +1459,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode('utf-8'))
+        self.wfile.write(json.dumps(data, cls=CustomJSONEncoder).encode('utf-8'))
 
 if __name__ == '__main__':
     with socketserver.TCPServer(("", PORT), AdminAPIHandler) as httpd:
