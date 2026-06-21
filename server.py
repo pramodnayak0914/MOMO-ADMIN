@@ -67,6 +67,7 @@ def init_db():
         return
     try:
         conn = psycopg2.connect(DATABASE_URL)
+        conn.autocommit = True
         cur = conn.cursor()
         cur.execute('''
             CREATE TABLE IF NOT EXISTS admins (
