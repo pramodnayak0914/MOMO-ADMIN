@@ -365,7 +365,7 @@
                     </div>
                 </div>
 
-                <div class="glass-card rounded-xl overflow-hidden mb-8">
+                <div class="glass-card rounded-xl mb-8">
                     <div class="p-6 border-b border-white/10 flex justify-between items-center">
                         <h2 class="text-xl font-bold">Recharge Management</h2>
                         <div class="relative inline-block text-left" id="custom-recharge-filter-container">
@@ -437,7 +437,7 @@
                     </div>
                 </div>
 
-                <div class="glass-card rounded-xl overflow-hidden mb-8">
+                <div class="glass-card rounded-xl mb-8">
                     <div class="p-6 border-b border-white/10 flex justify-between items-center">
                         <div>
                             <h2 class="text-xl font-bold">Payment Transactions</h2>
@@ -480,7 +480,7 @@
 
             <!-- NEW TAB: REFUNDS -->
             <div id="tab-refunds" class="tab-content hidden">
-                <div class="glass-card rounded-xl overflow-hidden mb-8 border border-rose-500/20">
+                <div class="glass-card rounded-xl mb-8 border border-rose-500/20">
                     <div class="p-6 border-b border-white/10 bg-rose-500/5 flex justify-between items-center">
                         <div>
                             <h2 class="text-xl font-bold text-rose-400 flex items-center gap-2">
@@ -489,14 +489,33 @@
                             </h2>
                             <p class="text-sm text-slate-400 mt-1">Manage user refunds for failed recharges.</p>
                         </div>
+                        <div class="relative inline-block text-left" id="custom-refund-filter-container">
+                            <button type="button" onclick="toggleRefundFilter()" class="flex items-center gap-2 bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white hover:bg-white/5 transition outline-none" id="custom-refund-filter-btn">
+                                <span id="custom-refund-filter-text">Pending</span>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                            </button>
+                            <input type="hidden" id="refund-filter" value="PENDING">
+                            
+                            <div id="custom-refund-dropdown" class="origin-top-right absolute right-0 mt-2 w-32 rounded-lg shadow-lg shadow-black/50 bg-[#1a1a24] border border-white/10 ring-1 ring-black ring-opacity-5 hidden z-50">
+                                <div class="py-1" role="menu">
+                                    <button onclick="setRefundFilter('ALL', 'All')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">All</button>
+                                    <button onclick="setRefundFilter('PENDING', 'Pending')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Pending</button>
+                                    <button onclick="setRefundFilter('APPROVED', 'Approved')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Approved</button>
+                                    <button onclick="setRefundFilter('REJECTED', 'Rejected')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Rejected</button>
+                                    <button onclick="setRefundFilter('RETRYING', 'Retrying')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Retrying</button>
+                                    <button onclick="setRefundFilter('REFUNDED', 'Refunded')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Refunded</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto min-h-[300px]">
                         <table class="w-full text-left border-collapse react-table">
                             <thead>
                                 <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
                                     <th class="p-4 font-semibold">Order ID</th>
+                                    <th class="p-4 font-semibold">User</th>
                                     <th class="p-4 font-semibold">Amount</th>
-                                    <th class="p-4 font-semibold">Reason</th>
+                                    <th class="p-4 font-semibold w-1/3">Reason</th>
                                     <th class="p-4 font-semibold">Status</th>
                                     <th class="p-4 font-semibold">Date</th>
                                     <th class="p-4 font-semibold text-right">Actions</th>
@@ -510,7 +529,7 @@
 
             <!-- NEW TAB: SETTLEMENTS -->
             <div id="tab-settlements" class="tab-content hidden">
-                <div class="glass-card rounded-xl overflow-hidden mb-8 border border-indigo-500/20">
+                <div class="glass-card rounded-xl mb-8 border border-indigo-500/20">
                     <div class="p-6 border-b border-white/10 bg-indigo-500/5 flex justify-between items-center">
                         <div>
                             <h2 class="text-xl font-bold text-indigo-400 flex items-center gap-2">
@@ -542,7 +561,7 @@
 
             <!-- NEW TAB: FRAUD CONTROLS -->
             <div id="tab-fraud" class="tab-content">
-                <div class="glass-card rounded-xl overflow-hidden mb-8 border border-red-500/20">
+                <div class="glass-card rounded-xl mb-8 border border-red-500/20">
                     <div class="p-6 border-b border-white/10 bg-red-500/5 flex justify-between items-center">
                         <div>
                             <h2 class="text-xl font-bold text-red-400 flex items-center gap-2">
@@ -561,6 +580,8 @@
                                     <th class="p-4 font-semibold">Trigger Details</th>
                                     <th class="p-4 font-semibold">IP / Device</th>
                                     <th class="p-4 font-semibold">Time</th>
+                                    <th class="p-4 font-semibold">Status</th>
+                                    <th class="p-4 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="fraud-table-body"></tbody>
@@ -571,7 +592,7 @@
 
             <!-- NEW TAB: MARKETING DATA -->
             <div id="tab-marketing" class="tab-content">
-                <div class="glass-card rounded-xl overflow-hidden mb-8">
+                <div class="glass-card rounded-xl mb-8">
                     <div class="p-6 border-b border-white/10">
                         <h2 class="text-xl font-bold text-amber-400 flex items-center gap-2">
                             <i data-lucide="trending-up" class="w-6 h-6"></i>
@@ -1146,10 +1167,36 @@
         );
     </script>
 
+    <!-- REFUND DETAILS MODAL -->
+    <div id="refund-details-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="bg-[#1a1a24] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="info" class="w-5 h-5 text-rose-400"></i>
+                    Refund Details
+                </h3>
+                <button onclick="closeRefundModal()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto" id="refund-modal-content">
+                <!-- Dynamic Content -->
+            </div>
+            <div class="p-6 border-t border-white/10 flex gap-3 justify-end bg-black/20" id="refund-modal-actions">
+                <!-- Actions -->
+            </div>
+        </div>
+    </div>
+
     <!-- Vanilla JS Logic for existing features -->
     <script>
         // Init Lucide Icons
         lucide.createIcons();
+
+        // Global state for refunds
+        window.allRefunds = [];
+        window.currentRefundFilter = 'PENDING';
+
 
         // Tab Switching Logic
         const tabs = document.querySelectorAll('.sidebar-item[data-tab]');
@@ -1169,6 +1216,10 @@
                 
                 // Update title
                 pageTitle.innerText = tab.querySelector('span').innerText;
+
+                if (targetId === 'tab-fraud') {
+                    loadFraudData();
+                }
             });
         });
 
@@ -1184,6 +1235,9 @@
             .then(authData => {
                 if (authData.success) {
                     sessionStorage.setItem('admin-token', authData.token);
+                    if (authData.role) {
+                        sessionStorage.setItem('admin-role', authData.role);
+                    }
                     
                     // Now fetch data
                     fetch('/api/admin/data', {
@@ -1820,6 +1874,18 @@
             });
         }
 
+        function toggleRefundFilter() {
+            document.getElementById('custom-refund-dropdown').classList.toggle('hidden');
+        }
+
+        function setRefundFilter(value, text) {
+            document.getElementById('custom-refund-filter-text').innerText = text;
+            document.getElementById('refund-filter').value = value;
+            window.currentRefundFilter = value;
+            document.getElementById('custom-refund-dropdown').classList.add('hidden');
+            renderRefundsTable();
+        }
+
         function fetchRefundsData() {
             const token = sessionStorage.getItem('admin-token');
             fetch('/api/admin/refunds', {
@@ -1830,40 +1896,121 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    const tbody = document.getElementById('refunds-table-body');
-                    tbody.innerHTML = '';
-                    data.refunds.forEach(r => {
-                        const tr = document.createElement('tr');
-                        tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
-                        const statusColor = r.status === 'Approved' || r.status === 'Refunded' ? 'text-emerald-400' : (r.status === 'Rejected' ? 'text-rose-400' : 'text-amber-400');
-                        
-                        let actionsHtml = '';
-                        if (r.status === 'Pending') {
-                            actionsHtml = `
-                                <button onclick="handleRefundAction(${r.id}, 'approve')" class="px-2 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded text-xs transition">Approve</button>
-                                <button onclick="handleRefundAction(${r.id}, 'reject')" class="px-2 py-1 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded text-xs transition">Reject</button>
-                            `;
-                        } else {
-                            actionsHtml = `<span class="text-slate-500 text-xs">${r.processed_by || 'Auto'}</span>`;
-                        }
-
-                        tr.innerHTML = `
-                            <td class="p-4 font-mono text-xs text-slate-300">${r.order_id}</td>
-                            <td class="p-4 font-medium text-white">₹${r.amount}</td>
-                            <td class="p-4 text-slate-300 text-sm">${r.reason}</td>
-                            <td class="p-4 font-semibold ${statusColor}">${r.status}</td>
-                            <td class="p-4 text-slate-400 text-sm">${new Date(r.created_at).toLocaleString()}</td>
-                            <td class="p-4 text-right flex justify-end gap-2">${actionsHtml}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
+                    window.allRefunds = data.refunds || [];
+                    renderRefundsTable();
                 }
             })
             .catch(err => console.error(err));
         }
 
+        function renderRefundsTable() {
+            const tbody = document.getElementById('refunds-table-body');
+            tbody.innerHTML = '';
+            
+            const filteredRefunds = window.currentRefundFilter === 'ALL' 
+                ? window.allRefunds 
+                : window.allRefunds.filter(r => r.status.toUpperCase() === window.currentRefundFilter);
+
+            filteredRefunds.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer";
+                tr.onclick = (e) => {
+                    if(e.target.tagName !== 'BUTTON') {
+                        openRefundModal(r);
+                    }
+                };
+
+                const statusColor = (r.status === 'APPROVED' || r.status === 'REFUNDED') ? 'text-emerald-400' 
+                                : (r.status === 'REJECTED' ? 'text-rose-400' : 'text-amber-400');
+                
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-xs text-slate-300">${r.order_id}</td>
+                    <td class="p-4 font-medium text-white">${r.user_phone || 'N/A'}</td>
+                    <td class="p-4 font-medium text-white">₹${r.amount}</td>
+                    <td class="p-4 text-slate-300 text-sm truncate max-w-xs" title="${r.reason}">${r.reason}</td>
+                    <td class="p-4 font-semibold ${statusColor}">${r.status}</td>
+                    <td class="p-4 text-slate-400 text-sm">${new Date(r.requested_at).toLocaleString()}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="openRefundModal(${JSON.stringify(r).replace(/"/g, '&quot;')})" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition">View</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openRefundModal(r) {
+            const content = document.getElementById('refund-modal-content');
+            const actions = document.getElementById('refund-modal-actions');
+            const role = sessionStorage.getItem('admin-role') || '';
+            const canAction = role === 'operations' || role === 'superadmin' || role === 'admin';
+            
+            const statusColor = (r.status === 'APPROVED' || r.status === 'REFUNDED') ? 'text-emerald-400' 
+                                : (r.status === 'REJECTED' ? 'text-rose-400' : 'text-amber-400');
+
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-black/30 p-3 rounded-lg border border-white/5">
+                            <div class="text-xs text-slate-400 mb-1">Order ID</div>
+                            <div class="font-mono text-sm text-white">${r.order_id}</div>
+                        </div>
+                        <div class="bg-black/30 p-3 rounded-lg border border-white/5">
+                            <div class="text-xs text-slate-400 mb-1">User</div>
+                            <div class="font-mono text-sm text-white">${r.user_phone || 'N/A'}</div>
+                        </div>
+                        <div class="bg-black/30 p-3 rounded-lg border border-white/5">
+                            <div class="text-xs text-slate-400 mb-1">Amount</div>
+                            <div class="text-lg font-bold text-white">₹${r.amount}</div>
+                        </div>
+                        <div class="bg-black/30 p-3 rounded-lg border border-white/5">
+                            <div class="text-xs text-slate-400 mb-1">Status</div>
+                            <div class="font-bold ${statusColor}">${r.status}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-black/30 p-4 rounded-lg border border-white/5 mt-4">
+                        <div class="text-xs text-slate-400 mb-2">Failure Reason</div>
+                        <p class="text-sm text-slate-200 whitespace-pre-wrap">${r.reason}</p>
+                    </div>
+
+                    ${r.approved_by ? `
+                    <div class="bg-white/5 p-3 rounded-lg flex justify-between items-center mt-4">
+                        <span class="text-xs text-slate-400">Processed By</span>
+                        <span class="text-sm text-white">${r.approved_by}</span>
+                    </div>` : ''}
+                    
+                    ${r.gateway_refund_id ? `
+                    <div class="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20 mt-4">
+                        <div class="text-xs text-emerald-500/70 mb-1">Cashfree Refund ID</div>
+                        <div class="font-mono text-sm text-emerald-400">${r.gateway_refund_id}</div>
+                    </div>` : ''}
+                </div>
+            `;
+
+            if (r.status === 'PENDING' && canAction) {
+                actions.innerHTML = `
+                    <button onclick="handleRefundAction(${r.id}, 'retry')" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition shadow-lg shadow-indigo-500/20">Retry Recharge</button>
+                    <button onclick="handleRefundAction(${r.id}, 'reject')" class="px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 rounded-lg text-sm font-medium transition">Reject</button>
+                    <button onclick="handleRefundAction(${r.id}, 'approve')" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition shadow-lg shadow-emerald-500/20">Approve Refund</button>
+                `;
+            } else {
+                actions.innerHTML = `
+                    <button onclick="closeRefundModal()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition">Close</button>
+                `;
+            }
+
+            document.getElementById('refund-details-modal').classList.remove('hidden');
+        }
+
+        function closeRefundModal() {
+            document.getElementById('refund-details-modal').classList.add('hidden');
+        }
+
         function handleRefundAction(refundId, action) {
             const token = sessionStorage.getItem('admin-token');
+            const btnStates = document.querySelectorAll('#refund-modal-actions button');
+            btnStates.forEach(btn => btn.disabled = true);
+            
             fetch('/api/admin/refunds/action', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -1872,14 +2019,20 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Refund ' + action + 'd successfully');
+                    showToast('Refund ' + action + ' initiated successfully');
+                    closeRefundModal();
                     fetchRefundsData();
                 } else {
                     showToast(data.error || 'Action failed', 'error');
+                    btnStates.forEach(btn => btn.disabled = false);
                 }
             })
-            .catch(err => showToast('Error processing refund', 'error'));
+            .catch(err => {
+                showToast('Error processing refund', 'error');
+                btnStates.forEach(btn => btn.disabled = false);
+            });
         }
+
 
         function fetchSettlementsData() {
             const token = sessionStorage.getItem('admin-token');
@@ -1951,6 +2104,93 @@
                 }
             });
         });
+
+        function loadFraudData() {
+            const token = sessionStorage.getItem('admin-token');
+            if (!token) return;
+
+            document.getElementById('fraud-table-body').innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-500">Loading...</td></tr>';
+
+            fetch('/api/admin/fraud', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const tbody = document.getElementById('fraud-table-body');
+                    tbody.innerHTML = '';
+                    
+                    if (!data.alerts || data.alerts.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No fraud alerts detected.</td></tr>';
+                        return;
+                    }
+
+                    data.alerts.forEach(alert => {
+                        let statusColor = "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
+                        if (alert.status === 'RESOLVED') statusColor = "bg-green-500/20 text-green-400 border-green-500/50";
+
+                        const tr = document.createElement('tr');
+                        tr.className = "border-b border-white/5 hover:bg-white/5 transition";
+                        tr.innerHTML = `
+                            <td class="p-4"><span class="font-bold text-white">${alert.user_phone}</span></td>
+                            <td class="p-4"><span class="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">${alert.alert_type}</span></td>
+                            <td class="p-4 text-sm text-slate-300">${alert.description}</td>
+                            <td class="p-4 text-xs text-slate-500 font-mono">${alert.ip_address || 'N/A'}<br/>${alert.device_id || 'N/A'}</td>
+                            <td class="p-4 text-xs text-slate-400">${new Date(alert.created_at).toLocaleString()}</td>
+                            <td class="p-4">
+                                <span class="px-2 py-1 rounded-full text-xs font-bold border ${statusColor}">${alert.status}</span>
+                            </td>
+                            <td class="p-4">
+                                ${alert.status === 'PENDING' ? `
+                                    <button onclick="fraudAction('suspend_user', '${alert.id}', '${alert.user_phone}')" class="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs mr-2 transition">Block User</button>
+                                    <button onclick="fraudAction('resolve_alert', '${alert.id}', '${alert.user_phone}')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs transition">Ignore</button>
+                                ` : `
+                                    <span class="text-xs text-slate-500">${alert.action_taken || 'Resolved'}</span>
+                                `}
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    showToast("Failed to load fraud data: " + data.error, "error");
+                }
+            })
+            .catch(err => {
+                showToast("Error loading fraud data: " + err.message, "error");
+            });
+        }
+
+        window.fraudAction = function(action, alertId, userPhone) {
+            if(!confirm(`Are you sure you want to perform: ${action}?`)) return;
+            const token = sessionStorage.getItem('admin-token');
+            if(!token) return;
+
+            fetch('/api/admin/fraud/action', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ action: action, alert_id: alertId, user_phone: userPhone })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    showToast("Action applied successfully.", "success");
+                    loadFraudData();
+                } else {
+                    showToast("Failed: " + data.error, "error");
+                }
+            })
+            .catch(err => {
+                showToast("Error: " + err.message, "error");
+            });
+        };
     </script>
 </body>
 </html>

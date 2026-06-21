@@ -166,6 +166,22 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS refund_requests (
+                id SERIAL PRIMARY KEY,
+                order_id VARCHAR(50) NOT NULL,
+                user_phone VARCHAR(20),
+                amount DECIMAL(10, 2) NOT NULL,
+                reason TEXT,
+                status VARCHAR(20) DEFAULT 'PENDING',
+                requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                approved_by VARCHAR(100),
+                refunded_at TIMESTAMP,
+                gateway_refund_id VARCHAR(100),
+                remarks TEXT
+            )
+        ''')
         
         cur.execute('''
             CREATE TABLE IF NOT EXISTS settlements (
@@ -212,6 +228,17 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        try: cur.execute("ALTER TABLE users ADD COLUMN browser_fingerprint VARCHAR(255)")
+        except: pass
+        try: cur.execute("ALTER TABLE users ADD COLUMN blocked_until TIMESTAMP")
+        except: pass
+        try: cur.execute("ALTER TABLE login_history ADD COLUMN browser_fingerprint VARCHAR(255)")
+        except: pass
+        try: cur.execute("ALTER TABLE fraud_alerts ADD COLUMN status VARCHAR(20) DEFAULT 'PENDING'")
+        except: pass
+        try: cur.execute("ALTER TABLE fraud_alerts ADD COLUMN action_taken TEXT")
+        except: pass
+
         conn.commit()
         cur.close()
         conn.close()
@@ -1049,10 +1076,11 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
-                cur.execute("SELECT * FROM refunds ORDER BY created_at DESC LIMIT 100")
+                cur.execute("SELECT * FROM refund_requests ORDER BY requested_at DESC LIMIT 100")
                 refunds = cur.fetchall()
                 for r in refunds:
-                    if 'created_at' in r and r['created_at']: r['created_at'] = r['created_at'].isoformat()
+                    if 'requested_at' in r and r['requested_at']: r['requested_at'] = r['requested_at'].isoformat()
+                    if 'refunded_at' in r and r['refunded_at']: r['refunded_at'] = r['refunded_at'].isoformat()
                 cur.close()
                 conn.close()
                 return self._send_json(200, {"success": True, "refunds": refunds})
@@ -1062,19 +1090,25 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/api/admin/refunds/action':
             admin = self.authenticate_admin(data)
             if not admin: return self._send_json(401, {"error": "Unauthorized"})
-            if admin['role'] not in ['finance', 'superadmin', 'admin']:
-                return self._send_json(403, {"error": "Forbidden. Finance or Superadmin role required to approve refunds."})
+            if admin['role'] not in ['operations', 'superadmin', 'admin']:
+                return self._send_json(403, {"error": "Forbidden. Operations or Superadmin role required to process refunds."})
             
             refund_id = data.get('refund_id')
-            action = data.get('action')
-            if not refund_id or action not in ['approve', 'reject']:
+            action = data.get('action') # 'approve', 'reject', 'retry'
+            if not refund_id or action not in ['approve', 'reject', 'retry']:
                 return self._send_json(400, {"error": "Invalid refund_id or action"})
                 
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor()
-                new_status = 'Approved' if action == 'approve' else 'Rejected'
-                cur.execute("UPDATE refunds SET status = %s, processed_by = %s WHERE id = %s AND status = 'Pending'", (new_status, admin['email'], refund_id))
+                if action == 'approve':
+                    new_status = 'APPROVED'
+                elif action == 'reject':
+                    new_status = 'REJECTED'
+                elif action == 'retry':
+                    new_status = 'RETRYING'
+                    
+                cur.execute("UPDATE refund_requests SET status = %s, approved_by = %s WHERE id = %s AND status = 'PENDING'", (new_status, admin['email'], refund_id))
                 if cur.rowcount == 0:
                     conn.rollback()
                     return self._send_json(400, {"error": "Refund already processed or not found"})
@@ -1157,6 +1191,84 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(csv_data.encode('utf-8'))
                 return
+            except Exception as e:
+                return self._send_json(500, {"error": str(e)})
+
+        elif self.path == '/api/admin/fraud':
+            admin = self.authenticate_admin(data)
+            if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            if admin['role'] not in ['superadmin', 'admin', 'operations']:
+                return self._send_json(403, {"error": "Forbidden"})
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                
+                # Fetch recent alerts
+                cur.execute("SELECT * FROM fraud_alerts ORDER BY created_at DESC LIMIT 50")
+                alerts = cur.fetchall()
+                for a in alerts:
+                    if 'created_at' in a and a['created_at']: a['created_at'] = a['created_at'].isoformat()
+                
+                # Top Suspicious IPs (Failed Payments > 3 in last 24h)
+                cur.execute("""
+                    SELECT ip_address, COUNT(*) as fail_count 
+                    FROM login_history 
+                    WHERE ip_address IS NOT NULL AND created_at >= NOW() - INTERVAL '24 hours'
+                    GROUP BY ip_address HAVING COUNT(*) > 3
+                    ORDER BY fail_count DESC LIMIT 5
+                """)
+                top_ips = cur.fetchall()
+                
+                # Suspended Users Count
+                cur.execute("SELECT COUNT(*) as c FROM users WHERE status = 'SUSPENDED'")
+                suspended_count = cur.fetchone()['c']
+                
+                # Active Alerts Count
+                cur.execute("SELECT COUNT(*) as c FROM fraud_alerts WHERE status = 'PENDING'")
+                active_alerts = cur.fetchone()['c']
+
+                cur.close()
+                conn.close()
+                
+                stats = {
+                    "suspended_count": suspended_count,
+                    "active_alerts": active_alerts,
+                    "top_ips": top_ips
+                }
+                
+                return self._send_json(200, {"success": True, "alerts": alerts, "stats": stats})
+            except Exception as e:
+                return self._send_json(500, {"error": str(e)})
+
+        elif self.path == '/api/admin/fraud/action':
+            admin = self.authenticate_admin(data)
+            if not admin: return self._send_json(401, {"error": "Unauthorized"})
+            if admin['role'] not in ['superadmin', 'admin', 'operations']:
+                return self._send_json(403, {"error": "Forbidden"})
+            
+            action = data.get('action')
+            alert_id = data.get('alert_id')
+            user_phone = data.get('user_phone')
+            
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                
+                if action == 'resolve_alert':
+                    cur.execute("UPDATE fraud_alerts SET status = 'RESOLVED', action_taken = %s WHERE id = %s", (f"Resolved by {admin['email']}", alert_id))
+                
+                elif action == 'suspend_user':
+                    cur.execute("UPDATE users SET status = 'SUSPENDED' WHERE phone_number = %s", (user_phone,))
+                    cur.execute("UPDATE fraud_alerts SET status = 'RESOLVED', action_taken = %s WHERE user_phone = %s AND status = 'PENDING'", (f"Suspended by {admin['email']}", user_phone))
+                
+                elif action == 'unblock_user':
+                    cur.execute("UPDATE users SET status = 'ACTIVE' WHERE phone_number = %s", (user_phone,))
+                    cur.execute("UPDATE fraud_alerts SET status = 'RESOLVED', action_taken = %s WHERE user_phone = %s AND status = 'PENDING'", (f"Unblocked by {admin['email']}", user_phone))
+
+                conn.commit()
+                cur.close()
+                conn.close()
+                return self._send_json(200, {"success": True})
             except Exception as e:
                 return self._send_json(500, {"error": str(e)})
         else:
@@ -1320,6 +1432,13 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_response(404)
             self.end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE, PUT')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.end_headers()
 
     def _send_json(self, status_code, data):
         self.send_response(status_code)
