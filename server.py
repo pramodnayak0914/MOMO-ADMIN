@@ -25,6 +25,32 @@ def get_cashfree_headers():
         "Accept": "application/json"
     }
 
+class RechargeProvider:
+    def requery(self, txn_id):
+        raise NotImplementedError
+    def retry(self, txn_id):
+        raise NotImplementedError
+
+class MockProvider(RechargeProvider):
+    def requery(self, txn_id):
+        import random
+        # State-based mocking: 70% success, 20% failed, 10% pending
+        r = random.random()
+        if r < 0.7:
+            return {"status": "SUCCESS"}
+        elif r < 0.9:
+            return {"status": "FAILED"}
+        else:
+            return {"status": "PENDING"}
+            
+    def retry(self, txn_id):
+        import random
+        # 80% success, 20% failure on retry
+        if random.random() < 0.8:
+            return {"status": "SUCCESS", "provider_txn_id": f"MOCK{random.randint(10000, 99999)}"}
+        else:
+            return {"status": "FAILED", "message": "Provider timeout"}
+
 def init_db():
     if not DATABASE_URL or not psycopg2:
         return
@@ -662,6 +688,30 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                             cur.execute("SELECT brand_name, SUM(CAST(plan_details->>'price' AS DECIMAL)) as rev FROM purchases GROUP BY brand_name ORDER BY rev DESC LIMIT 1")
                             row = cur.fetchone()
                             if row and row.get('brand_name'): business_metrics['operators']['most_profitable'] = row['brand_name']
+                            
+                            # Operator Analytics for Recharge Management
+                            cur.execute("""
+                                SELECT 
+                                    p.brand_name, 
+                                    COUNT(*) as total, 
+                                    SUM(CASE WHEN LOWER(t.status) IN ('success', 'paid') THEN 1 ELSE 0 END) as success,
+                                    SUM(CASE WHEN LOWER(t.status) IN ('failed', 'refunded') THEN 1 ELSE 0 END) as failed
+                                FROM purchases p
+                                JOIN transactions t ON p.order_id = t.order_id
+                                GROUP BY p.brand_name
+                            """)
+                            operator_analytics = []
+                            for r in cur.fetchall():
+                                total = r['total']
+                                if total > 0:
+                                    success_rate = (r['success'] / total) * 100
+                                    operator_analytics.append({
+                                        "operator": r['brand_name'],
+                                        "total": int(total),
+                                        "success_rate": round(success_rate, 1),
+                                        "failed": int(r['failed'])
+                                    })
+                            business_metrics['operator_analytics'] = operator_analytics
                         except Exception as e:
                             print(f"Error fetching business metrics: {e}")
                             conn.rollback()
@@ -770,34 +820,60 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(500, {"error": str(e)})
             return
             
-        elif self.path == '/api/admin/recharges/status':
+        elif self.path == '/api/admin/recharge/action':
             if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
+            action = data.get('action')
             order_id = data.get('order_id')
-            status = data.get('status')
+            
             try:
-                if DATABASE_URL and psycopg2:
-                    conn = psycopg2.connect(DATABASE_URL)
-                    cur = conn.cursor()
-                    cur.execute("UPDATE transactions SET status = %s WHERE order_id = %s", (status, order_id))
-                    conn.commit()
-                    cur.close()
-                    conn.close()
-                self._send_json(200, {"success": True})
-            except Exception as e:
-                self._send_json(500, {"error": str(e)})
-            return
-        elif self.path == '/api/admin/recharges/retry':
-            if not self.authenticate_admin(data): return self._send_json(401, {"error": "Unauthorized"})
-            order_id = data.get('order_id')
-            try:
-                if DATABASE_URL and psycopg2:
-                    conn = psycopg2.connect(DATABASE_URL)
-                    cur = conn.cursor()
-                    cur.execute("UPDATE transactions SET status = 'PENDING' WHERE order_id = %s", (order_id,))
-                    conn.commit()
-                    cur.close()
-                    conn.close()
-                self._send_json(200, {"success": True})
+                if action == 'requery':
+                    provider = MockProvider()
+                    result = provider.requery(order_id)
+                    new_status = result.get('status', 'PENDING')
+                    if DATABASE_URL and psycopg2:
+                        conn = psycopg2.connect(DATABASE_URL)
+                        cur = conn.cursor()
+                        cur.execute("UPDATE transactions SET status = %s WHERE order_id = %s", (new_status, order_id))
+                        conn.commit()
+                        cur.close()
+                        conn.close()
+                    return self._send_json(200, {"success": True, "new_status": new_status})
+                
+                elif action == 'retry':
+                    provider = MockProvider()
+                    result = provider.retry(order_id)
+                    new_status = result.get('status', 'FAILED')
+                    if DATABASE_URL and psycopg2:
+                        conn = psycopg2.connect(DATABASE_URL)
+                        cur = conn.cursor()
+                        cur.execute("UPDATE transactions SET status = %s WHERE order_id = %s", (new_status, order_id))
+                        conn.commit()
+                        cur.close()
+                        conn.close()
+                    return self._send_json(200, {"success": True, "new_status": new_status, "message": result.get('message')})
+                
+                elif action == 'force_status':
+                    admin_permissions = {"can_refund": True, "can_suspend_users": True, "can_edit_growth": True, "can_view_marketing": True, "can_override_recharge": False}
+                    if DATABASE_URL and psycopg2:
+                        conn = psycopg2.connect(DATABASE_URL)
+                        cur = conn.cursor()
+                        cur.execute("SELECT value FROM app_config WHERE key = 'admin_permissions'")
+                        perm_row = cur.fetchone()
+                        if perm_row and perm_row[0]:
+                            import json
+                            admin_permissions = json.loads(perm_row[0])
+                        
+                        if not admin_permissions.get('can_override_recharge', False):
+                            cur.close()
+                            conn.close()
+                            return self._send_json(403, {"error": "Forbidden: You do not have permission to override recharge status."})
+                        
+                        status = data.get('status')
+                        cur.execute("UPDATE transactions SET status = %s WHERE order_id = %s", (status, order_id))
+                        conn.commit()
+                        cur.close()
+                        conn.close()
+                    return self._send_json(200, {"success": True})
             except Exception as e:
                 self._send_json(500, {"error": str(e)})
             return
