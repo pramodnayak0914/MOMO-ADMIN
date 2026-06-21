@@ -360,12 +360,23 @@
                 <div class="glass-card rounded-xl overflow-hidden mb-8">
                     <div class="p-6 border-b border-white/10 flex justify-between items-center">
                         <h2 class="text-xl font-bold">Recharge Management</h2>
-                        <select id="recharge-filter" onchange="renderRecharges(window.globalData)" class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white outline-none">
-                            <option value="ALL">All</option>
-                            <option value="SUCCESS">Success</option>
-                            <option value="PENDING">Pending</option>
-                            <option value="FAILED">Failed</option>
-                        </select>
+                        <div class="relative inline-block text-left" id="custom-recharge-filter-container">
+                            <button type="button" onclick="toggleRechargeFilter()" class="flex items-center gap-2 bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white hover:bg-white/5 transition outline-none" id="custom-recharge-filter-btn">
+                                <span id="custom-recharge-filter-text">All</span>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                            </button>
+                            <!-- Hidden input to store value -->
+                            <input type="hidden" id="recharge-filter" value="ALL">
+                            
+                            <div id="custom-recharge-dropdown" class="origin-top-right absolute right-0 mt-2 w-32 rounded-lg shadow-lg shadow-black/50 bg-[#1a1a24] border border-white/10 ring-1 ring-black ring-opacity-5 hidden z-50">
+                                <div class="py-1" role="menu">
+                                    <button onclick="setRechargeFilter('ALL', 'All')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">All</button>
+                                    <button onclick="setRechargeFilter('SUCCESS', 'Success')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Success</button>
+                                    <button onclick="setRechargeFilter('PENDING', 'Pending')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Pending</button>
+                                    <button onclick="setRechargeFilter('FAILED', 'Failed')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Failed</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse react-table">
@@ -1470,6 +1481,26 @@
             renderUsers(data);
             renderRecharges(data);
         }
+
+        function toggleRechargeFilter() {
+            const dropdown = document.getElementById('custom-recharge-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function setRechargeFilter(val, label) {
+            document.getElementById('recharge-filter').value = val;
+            document.getElementById('custom-recharge-filter-text').innerText = label;
+            document.getElementById('custom-recharge-dropdown').classList.add('hidden');
+            renderRecharges(window.globalData);
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const container = document.getElementById('custom-recharge-filter-container');
+            if (container && !container.contains(event.target)) {
+                document.getElementById('custom-recharge-dropdown').classList.add('hidden');
+            }
+        });
 
         function renderRecharges(data) {
             if (!data || !data.transactions) return;
