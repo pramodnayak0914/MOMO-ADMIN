@@ -877,7 +877,6 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                         cur.execute("SELECT value FROM app_config WHERE key = 'admin_permissions'")
                         perm_row = cur.fetchone()
                         if perm_row and perm_row[0]:
-                            import json
                             admin_permissions = json.loads(perm_row[0])
                         
                         if not admin_permissions.get('can_override_recharge', False):
