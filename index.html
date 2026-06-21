@@ -570,6 +570,72 @@
                 </div>
             </div>
 
+            <!-- USER DETAILS MODAL -->
+            <div id="user-details-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 hidden">
+                <div class="glass-card w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-white/20 shadow-2xl">
+                    <button onclick="closeUserModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                    
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-white text-2xl font-bold" id="um-avatar">
+                            <i data-lucide="user"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold" id="um-phone">User Phone</h2>
+                            <p class="text-slate-400" id="um-joined">Joined: ...</p>
+                        </div>
+                        <div class="ml-auto flex gap-3" id="um-actions">
+                            <!-- Action buttons injected via JS -->
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                            <p class="text-sm text-slate-400">Wallet Balance</p>
+                            <p class="text-2xl font-bold text-emerald-400" id="um-wallet">₹0.00</p>
+                        </div>
+                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                            <p class="text-sm text-slate-400">Loyalty Tier</p>
+                            <p class="text-2xl font-bold text-purple-400" id="um-loyalty">Silver</p>
+                        </div>
+                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                            <p class="text-sm text-slate-400">Status</p>
+                            <p class="text-2xl font-bold" id="um-status">ACTIVE</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Login History -->
+                        <div>
+                            <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="log-in" class="w-5 h-5"></i> Login History</h3>
+                            <div class="bg-black/40 rounded-xl border border-white/5 overflow-hidden max-h-[300px] overflow-y-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-white/5 text-slate-400">
+                                        <tr>
+                                            <th class="p-3">Time</th>
+                                            <th class="p-3">IP / Location</th>
+                                            <th class="p-3">Device</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="um-logins-body" class="divide-y divide-white/5">
+                                        <!-- JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Fraud Alerts -->
+                        <div>
+                            <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-rose-400"><i data-lucide="alert-triangle" class="w-5 h-5"></i> Fraud Alerts</h3>
+                            <div class="bg-black/40 rounded-xl border border-white/5 p-4 min-h-[300px] max-h-[300px] overflow-y-auto" id="um-fraud-body">
+                                <!-- JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -937,7 +1003,162 @@
             document.getElementById('login-overlay').classList.remove('hidden');
         });
 
+        // USER MANAGEMENT LOGIC
+        window.globalData = null;
+
+        function openUserModal(phone) {
+            if (!window.globalData || !window.globalData.users) return;
+            const user = window.globalData.users.find(u => u.phone_number === phone);
+            if (!user) return;
+
+            document.getElementById('um-phone').innerText = user.phone_number;
+            document.getElementById('um-joined').innerText = 'Joined: ' + new Date(user.created_at).toLocaleDateString();
+            document.getElementById('um-wallet').innerText = '₹' + (user.wallet_balance || 0).toFixed(2);
+            document.getElementById('um-loyalty').innerText = user.loyalty_tier || 'Silver';
+            document.getElementById('um-status').innerText = user.status || 'ACTIVE';
+            
+            const isSuspended = user.status === 'SUSPENDED';
+            if (isSuspended) {
+                document.getElementById('um-status').className = 'text-2xl font-bold text-rose-500';
+            } else {
+                document.getElementById('um-status').className = 'text-2xl font-bold text-emerald-400';
+            }
+
+            // Render Actions
+            const actionsDiv = document.getElementById('um-actions');
+            actionsDiv.innerHTML = `
+                <button onclick="resetUser('${user.phone_number}')" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition flex items-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reset Binding
+                </button>
+                ${isSuspended ? 
+                `<button onclick="userAction('${user.phone_number}', 'activate')" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Activate
+                </button>` : 
+                `<button onclick="userAction('${user.phone_number}', 'suspend')" class="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                    <i data-lucide="ban" class="w-4 h-4"></i> Suspend
+                </button>`}
+            `;
+
+            // Render Logins
+            const loginsBody = document.getElementById('um-logins-body');
+            loginsBody.innerHTML = '';
+            const userLogins = (window.globalData.logins || []).filter(l => l.user_phone === phone);
+            if (userLogins.length === 0) {
+                loginsBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-500 italic">No login history</td></tr>';
+            } else {
+                userLogins.forEach(l => {
+                    loginsBody.innerHTML += `
+                        <tr class="hover:bg-white/5 transition">
+                            <td class="p-3 whitespace-nowrap">${new Date(l.created_at).toLocaleString()}</td>
+                            <td class="p-3">${l.ip_address || 'Unknown'}<br><span class="text-xs text-slate-500">${l.location || ''}</span></td>
+                            <td class="p-3 text-xs text-slate-400 truncate max-w-[150px]" title="${l.device_info}">${l.device_info || 'Unknown Device'}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // Render Fraud Alerts
+            const fraudBody = document.getElementById('um-fraud-body');
+            fraudBody.innerHTML = '';
+            const userFraud = (window.globalData.fraud_alerts || []).filter(f => f.user_phone === phone);
+            if (userFraud.length === 0) {
+                fraudBody.innerHTML = '<p class="text-slate-500 italic text-center py-8">No suspicious activity detected.</p>';
+            } else {
+                userFraud.forEach(f => {
+                    fraudBody.innerHTML += `
+                        <div class="mb-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-bold text-rose-400 text-sm">${f.alert_type}</span>
+                                <span class="text-xs text-slate-500">${new Date(f.created_at).toLocaleString()}</span>
+                            </div>
+                            <p class="text-sm text-slate-300">${f.description}</p>
+                        </div>
+                    `;
+                });
+            }
+
+            lucide.createIcons();
+            document.getElementById('user-details-modal').classList.remove('hidden');
+        }
+
+        function closeUserModal() {
+            document.getElementById('user-details-modal').classList.add('hidden');
+        }
+
+        function userAction(phone, action) {
+            if (!confirm(`Are you sure you want to ${action} user ${phone}?`)) return;
+            const token = sessionStorage.getItem('admin-token');
+            fetch('/api/admin/users/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ phone_number: phone, action: action })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    showToast(`User ${action} successful!`);
+                    closeUserModal();
+                    // Refresh data
+                    document.getElementById('refresh-btn').click();
+                } else {
+                    showToast(res.error || `Failed to ${action} user`, 'error');
+                }
+            });
+        }
+
+        function resetUser(phone) {
+            if (!confirm(`Resetting binding for ${phone} will clear their device_id and allow login from a new device. Continue?`)) return;
+            const token = sessionStorage.getItem('admin-token');
+            fetch('/api/admin/users/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ phone_number: phone, action: 'reset' })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    showToast(`Security binding reset for ${phone}!`);
+                    closeUserModal();
+                } else {
+                    showToast(res.error || 'Failed to reset user', 'error');
+                }
+            });
+        }
+
+        function renderUsers(data) {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+            if (!data.users || data.users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500">No users found.</td></tr>';
+                return;
+            }
+            data.users.forEach(u => {
+                const isSuspended = u.status === 'SUSPENDED';
+                const statusBadge = isSuspended ? 
+                    '<span class="px-2 py-1 bg-rose-500/20 text-rose-400 text-xs rounded-full border border-rose-500/30">Suspended</span>' : 
+                    '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30">Active</span>';
+                
+                tbody.innerHTML += `
+                    <tr class="hover:bg-white/5 transition border-b border-white/5 last:border-0">
+                        <td class="p-4 font-medium flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary"><i data-lucide="user" class="w-4 h-4"></i></div>
+                            ${u.phone_number}
+                        </td>
+                        <td class="p-4">${statusBadge}</td>
+                        <td class="p-4 text-sm text-slate-400">${new Date(u.created_at).toLocaleDateString()}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="openUserModal('${u.phone_number}')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition">
+                                Manage
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
         function renderDashboard(data) {
+            window.globalData = data;
             if (data.assistant_name) {
                 document.getElementById('admin-assistant-name').value = data.assistant_name;
             }
@@ -1067,6 +1288,8 @@
                     amountsDiv.innerHTML = '<span class="text-slate-500 italic text-sm">No amount data yet.</span>';
                 }
             }
+
+            renderUsers(data);
         }
         function showToast(message, type = 'success') {
             let container = document.getElementById('toast-container');

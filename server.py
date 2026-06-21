@@ -128,6 +128,25 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS login_history (
+                id SERIAL PRIMARY KEY,
+                user_phone VARCHAR(20),
+                ip_address VARCHAR(50),
+                location VARCHAR(255),
+                device_info VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS fraud_alerts (
+                id SERIAL PRIMARY KEY,
+                user_phone VARCHAR(20),
+                alert_type VARCHAR(50),
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
         conn.commit()
         cur.close()
         conn.close()
@@ -738,8 +757,11 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 if DATABASE_URL and psycopg2:
                     conn = psycopg2.connect(DATABASE_URL)
                     cur = conn.cursor()
-                    status = 'SUSPENDED' if action == 'suspend' else 'ACTIVE'
-                    cur.execute("UPDATE users SET status = %s WHERE phone_number = %s", (status, phone))
+                    if action == 'reset':
+                        cur.execute("UPDATE users SET device_id = NULL, last_ip = NULL WHERE phone_number = %s", (phone,))
+                    else:
+                        status = 'SUSPENDED' if action == 'suspend' else 'ACTIVE'
+                        cur.execute("UPDATE users SET status = %s WHERE phone_number = %s", (status, phone))
                     conn.commit()
                     cur.close()
                     conn.close()
