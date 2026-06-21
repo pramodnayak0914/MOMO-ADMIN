@@ -239,8 +239,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         post_data = self._read_body()
         try:
             data = json.loads(post_data)
-        except Exception:
-            data = {}
+        except Exception as e:
+            return self._send_json(400, {"success": False, "error": f"JSON Parse Error: {str(e)} | Body Length: {len(post_data)} | Body: {post_data.decode('utf-8', errors='ignore')}"})
 
         if self.path in ('/api/admin/login', '/api/auth/login'):
             email = data.get('email')
