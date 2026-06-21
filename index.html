@@ -1039,6 +1039,31 @@
                     lucide.createIcons();
                 }
             }
+
+            if (data.marketing_data) {
+                const plansUl = document.getElementById('marketing-popular-plans');
+                plansUl.innerHTML = '';
+                if (data.marketing_data.top_operators && data.marketing_data.top_operators.length > 0) {
+                    data.marketing_data.top_operators.forEach(op => {
+                        plansUl.innerHTML += `<li class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/10">
+                            <span class="font-bold text-white">${op.operator_brand || 'Unknown'} Plans</span>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded font-bold">${op.count} Recharges</span>
+                        </li>`;
+                    });
+                } else {
+                    plansUl.innerHTML = '<li class="text-slate-500 italic text-sm">No plan data yet.</li>';
+                }
+
+                const amountsDiv = document.getElementById('marketing-top-amounts');
+                amountsDiv.innerHTML = '';
+                if (data.marketing_data.top_amounts && data.marketing_data.top_amounts.length > 0) {
+                    data.marketing_data.top_amounts.forEach(amt => {
+                        amountsDiv.innerHTML += `<span class="px-4 py-2 bg-gradient-to-r from-primary to-accent rounded-lg text-sm font-bold text-white shadow-lg border border-white/20">₹${amt.amount} <span class="opacity-75 text-xs ml-1">(${amt.count}x)</span></span>`;
+                    });
+                } else {
+                    amountsDiv.innerHTML = '<span class="text-slate-500 italic text-sm">No amount data yet.</span>';
+                }
+            }
         }
         function showToast(message, type = 'success') {
             let container = document.getElementById('toast-container');
