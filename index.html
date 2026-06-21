@@ -982,7 +982,8 @@
             document.getElementById('metric-revenue').innerText = '₹' + totalRevenue.toLocaleString();
             document.getElementById('metric-refunded').innerText = '₹' + totalRefunded.toLocaleString();
             document.getElementById('metric-tx-count').innerText = successCount;
-            document.getElementById('metric-plans-count').innerText = data.purchases.length;
+            const purchaseData = data.purchases || data.transactions || [];
+            document.getElementById('metric-plans-count').innerText = purchaseData.length;
 
             if (data.analytics) {
                 document.getElementById('funnel-visits').innerText = data.analytics.page_view || 0;
@@ -993,9 +994,10 @@
             }
 
             const pBody = document.getElementById('purchases-table-body');
-            pBody.innerHTML = '';
-            data.purchases.forEach(p => {
-                pBody.innerHTML += `
+            if (pBody) {
+                pBody.innerHTML = '';
+                purchaseData.forEach(p => {
+                    pBody.innerHTML += `
                     <tr class="hover:bg-white/5 transition whitespace-nowrap">
                         <td class="p-4 font-semibold">${p.user_identifier}</td>
                         <td class="p-4 text-slate-300">${p.brand_name || '-'}</td>
@@ -1003,7 +1005,8 @@
                         <td class="p-4 text-slate-400 text-sm">${new Date(p.created_at).toLocaleString()}</td>
                     </tr>
                 `;
-            });
+                });
+            }
 
             if (data.analytics && data.analytics.leads) {
                 const leadsBody = document.getElementById('leads-table-body');
