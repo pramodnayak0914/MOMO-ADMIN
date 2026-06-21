@@ -414,6 +414,8 @@
                         <div class="flex items-center gap-2 text-sm">
                             <span class="text-emerald-400 font-medium" id="pay-stat-success">0 Success</span>
                             <span class="text-slate-500">•</span>
+                            <span class="text-amber-400 font-medium" id="pay-stat-pending">0 Pending</span>
+                            <span class="text-slate-500">•</span>
                             <span class="text-red-400 font-medium" id="pay-stat-failed">0 Failed</span>
                         </div>
                     </div>
@@ -458,7 +460,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto min-h-[250px]">
                         <table class="w-full text-left border-collapse react-table">
                             <thead>
                                 <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
@@ -1788,6 +1790,7 @@
 
             document.getElementById('pay-stat-initiated').innerText = stats.initiated || 0;
             document.getElementById('pay-stat-success').innerText = (stats.success || 0) + ' Success';
+            document.getElementById('pay-stat-pending').innerText = (stats.pending || 0) + ' Pending';
             document.getElementById('pay-stat-failed').innerText = (stats.failed || 0) + ' Failed';
             document.getElementById('pay-stat-revenue').innerText = '₹' + (stats.revenue || 0).toLocaleString();
             document.getElementById('pay-stat-refunds').innerText = '₹' + (stats.refunds_amount || 0).toLocaleString();

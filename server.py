@@ -1015,6 +1015,9 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 cur.execute("SELECT COUNT(*) as c FROM transactions WHERE payment_status = 'FAILED' AND created_at >= CURRENT_DATE")
                 failed = cur.fetchone()['c']
                 
+                cur.execute("SELECT COUNT(*) as c FROM transactions WHERE payment_status = 'PENDING' AND created_at >= CURRENT_DATE")
+                pending = cur.fetchone()['c']
+                
                 cur.execute("SELECT COALESCE(SUM(amount), 0) as r FROM transactions WHERE payment_status = 'SUCCESS' AND created_at >= CURRENT_DATE")
                 revenue = float(cur.fetchone()['r'])
                 
@@ -1027,6 +1030,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 stats = {
                     "initiated": initiated,
                     "success": success,
+                    "pending": pending,
                     "failed": failed,
                     "revenue": revenue,
                     "refunds_amount": refunds_amount,
