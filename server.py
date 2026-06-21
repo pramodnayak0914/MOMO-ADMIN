@@ -216,10 +216,27 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             print(f"Auth error: {e}")
         return False
 
-    def do_POST(self):
-
+    def _read_body(self):
         content_length = int(self.headers.get('Content-Length', 0))
-        post_data = self.rfile.read(content_length)
+        if self.headers.get('Transfer-Encoding', '').lower() == 'chunked':
+            body = b""
+            while True:
+                line = self.rfile.readline().strip()
+                if not line: break
+                try:
+                    chunk_length = int(line, 16)
+                except ValueError:
+                    break
+                if chunk_length == 0:
+                    self.rfile.readline()
+                    break
+                body += self.rfile.read(chunk_length)
+                self.rfile.readline()
+            return body
+        return self.rfile.read(content_length)
+
+    def do_POST(self):
+        post_data = self._read_body()
         try:
             data = json.loads(post_data)
         except Exception:
