@@ -1768,11 +1768,11 @@
             const newName = document.getElementById('admin-assistant-name').value.trim();
             if (!newName) return;
 
-            const passcode = sessionStorage.getItem('admin-passcode');
+            const token = sessionStorage.getItem('admin-token');
             fetch('/api/admin/config', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ passcode: passcode, assistant_name: newName })
+                headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+                body: JSON.stringify({ assistant_name: newName })
             })
             .then(res => res.json())
             .then(data => {
