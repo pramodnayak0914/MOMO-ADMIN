@@ -1088,12 +1088,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             admin = self.authenticate_admin(data)
             if not admin: return self._send_json(401, {"error": "Unauthorized"})
             if not DATABASE_URL or not psycopg2:
-                mock_refunds = [
-                    {"id": 1, "order_id": "ORD12345", "user_phone": "9876543210", "amount": "150.00", "reason": "Failed recharge", "status": "PENDING", "requested_at": "2023-10-27T10:00:00Z"},
-                    {"id": 2, "order_id": "ORD12346", "user_phone": "9876543211", "amount": "200.00", "reason": "Double debit", "status": "APPROVED", "requested_at": "2023-10-26T14:30:00Z"},
-                    {"id": 3, "order_id": "ORD12347", "user_phone": "9876543212", "amount": "50.00", "reason": "Wrong plan", "status": "REJECTED", "requested_at": "2023-10-25T09:15:00Z"}
-                ]
-                return self._send_json(200, {"success": True, "refunds": mock_refunds})
+                return self._send_json(200, {"success": True, "refunds": []})
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
