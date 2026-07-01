@@ -1305,18 +1305,27 @@
 
             // Render Actions
             const actionsDiv = document.getElementById('um-actions');
-            actionsDiv.innerHTML = `
-                <button onclick="resetUser('${userPhone}')" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition flex items-center gap-2">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reset Binding
-                </button>
-                ${isSuspended ? 
-                `<button onclick="userAction('${userPhone}', 'activate')" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
-                    <i data-lucide="check-circle" class="w-4 h-4"></i> Activate
-                </button>` : 
-                `<button onclick="userAction('${userPhone}', 'suspend')" class="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
-                    <i data-lucide="ban" class="w-4 h-4"></i> Suspend
-                </button>`}
-            `;
+            const role = sessionStorage.getItem('admin-role');
+            if (role === 'superadmin' || role === 'super_admin') {
+                actionsDiv.innerHTML = `
+                    <button onclick="resetUser('${userPhone}')" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition flex items-center gap-2">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reset Binding
+                    </button>
+                    ${isSuspended ? 
+                    `<button onclick="userAction('${userPhone}', 'activate')" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Activate
+                    </button>` : 
+                    `<button onclick="userAction('${userPhone}', 'suspend')" class="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                        <i data-lucide="ban" class="w-4 h-4"></i> Suspend
+                    </button>`}
+                `;
+            } else {
+                actionsDiv.innerHTML = `
+                    <div class="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-slate-400 flex items-center gap-2">
+                        <i data-lucide="lock" class="w-4 h-4"></i> Read Only (Super Admin Required)
+                    </div>
+                `;
+            }
 
             // Render Logins
             const loginsBody = document.getElementById('um-logins-body');
