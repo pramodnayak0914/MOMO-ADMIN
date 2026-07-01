@@ -1323,6 +1323,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 print(f"Error fetching tickets: {e}")
                 self._send_json(500, {"success": False, "error": str(e)})
         else:
+            if not os.path.exists(self.translate_path(self.path)):
+                self.path = '/'
             super().do_GET()
 
     def do_PUT(self):
@@ -1463,6 +1465,7 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps(data, cls=CustomJSONEncoder).encode('utf-8'))
 
 if __name__ == '__main__':
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), AdminAPIHandler) as httpd:
         print(f"Admin Server running at http://localhost:{PORT}")
         httpd.serve_forever()
