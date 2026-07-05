@@ -2,2206 +2,1073 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OnlineRecharge-AI Admin</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GeniePay | Operations Center</title>
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
-    <!-- React & Tailwind dependencies -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.23.0/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#0a0f19',
-                        surface: '#121826',
-                        'surface-light': '#1e2536',
-                        primary: '#ff3366',
-                        accent: '#00d8f6',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            color: #94a3b8;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        .sidebar-item:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: white;
-        }
-        .sidebar-item.active {
-            background-color: rgba(255, 51, 102, 0.1);
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Support Ticket React Table Overrides */
-        .react-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .react-table th {
-            text-align: left;
-            padding: 1rem;
-            color: #94a3b8;
-            font-weight: 600;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            background: rgba(0,0,0,0.2);
-        }
-        .react-table td {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            color: #e2e8f0;
-        }
-        .react-table tr:hover {
-            background-color: rgba(255,255,255,0.02);
-        }
+        body { background-color: #0B0E14; color: #fff; font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(20, 25, 35, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.05); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .sidebar-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: #94a3b8; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; }
+        .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .sidebar-item.active { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
     </style>
-    <link rel="stylesheet" href="/responsive.css">
+    <link rel="stylesheet" href="/responsive.css?v=20260705110929">
 </head>
-<body class="bg-dark text-slate-300 font-sans antialiased overflow-hidden">
-    <!-- GLOBAL ERROR CATCHER -->
-    <script>
-        window.addEventListener('error', function(e) {
-            const errDiv = document.createElement('div');
-            errDiv.style.position = 'fixed';
-            errDiv.style.top = '10%';
-            errDiv.style.left = '10%';
-            errDiv.style.width = '80%';
-            errDiv.style.zIndex = '999999';
-            errDiv.style.background = 'red';
-            errDiv.style.color = 'white';
-            errDiv.style.padding = '20px';
-            errDiv.style.fontSize = '16px';
-            errDiv.innerHTML = `<strong>Global JS Error:</strong><br/>${e.message}<br/>File: ${e.filename}:${e.lineno}:${e.colno}`;
-            document.body.appendChild(errDiv);
-        });
-        window.addEventListener('unhandledrejection', function(e) {
-            const errDiv = document.createElement('div');
-            errDiv.style.position = 'fixed';
-            errDiv.style.top = '10%';
-            errDiv.style.left = '10%';
-            errDiv.style.width = '80%';
-            errDiv.style.zIndex = '999999';
-            errDiv.style.background = 'orange';
-            errDiv.style.color = 'white';
-            errDiv.style.padding = '20px';
-            errDiv.style.fontSize = '16px';
-            errDiv.innerHTML = `<strong>Unhandled Promise Rejection:</strong><br/>${e.reason}`;
-            document.body.appendChild(errDiv);
-        });
-    </script>
+<body class="h-screen flex overflow-hidden">
+    <!-- Application Level Modal -->
+    <div id="super-app-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-[#1a1a24] border border-purple-500/30 rounded-xl max-w-sm w-full shadow-2xl overflow-hidden text-center transform transition-all scale-95 opacity-0" id="super-app-modal-content">
+            <div class="p-6">
+                <div class="w-12 h-12 bg-purple-500/20 text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="info" class="w-6 h-6"></i>
+                </div>
+                <h3 id="super-modal-title" class="text-xl font-bold text-white mb-2">Notice</h3>
+                <p id="super-modal-message" class="text-slate-300 text-sm mb-6"></p>
+                <button onclick="closeSuperModal()" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition">OK</button>
+            </div>
+        </div>
+    </div>
+    <!-- Confirm Modal -->
+    <div id="super-confirm-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-[#1a1a24] border border-red-500/30 rounded-xl max-w-sm w-full shadow-2xl overflow-hidden text-center transform transition-all scale-95 opacity-0" id="super-confirm-modal-content">
+            <div class="p-6">
+                <div class="w-12 h-12 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 id="super-confirm-title" class="text-xl font-bold text-white mb-2">Confirm</h3>
+                <p id="super-confirm-message" class="text-slate-300 text-sm mb-6"></p>
+                <div class="flex gap-3">
+                    <button onclick="closeSuperConfirm()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold transition">Cancel</button>
+                    <button id="super-confirm-btn" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
     
-    <!-- Login Overlay -->
-    <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-dark">
-        <div class="glass-card w-full max-w-md p-8 rounded-2xl text-center">
-            
-            <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-primary/20 bg-gradient-to-tr from-[#FF4B72] to-[#00D2FF]">
-                <i data-lucide="shield" class="w-8 h-8 text-white"></i>
-            </div>
-            
-            <h2 class="text-2xl font-bold mb-6 text-white">Admin Access</h2>
-            
-            <input type="email" id="admin-email" placeholder="Email Address" class="w-full mb-4 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition" value="staff@momo.com">
-            
-            <input type="password" id="admin-password" placeholder="Password" class="w-full mb-6 p-4 rounded-xl border border-white/10 bg-black/50 text-white outline-none focus:border-primary transition" value="admin123">
-            
-            <button id="login-btn" class="primary-glow-btn w-full py-4 rounded-xl mb-4" style="background: linear-gradient(to right, #FF4B72, #00D2FF); box-shadow: 0 4px 20px rgba(255, 75, 114, 0.3);">Unlock Dashboard</button>
-            
-            <button id="btn-forgot-password" type="button" class="text-slate-400 hover:text-white text-sm transition block mb-2 mx-auto cursor-pointer">Forgot Password?</button>
-            
-            <p id="login-error" class="text-red-500 mt-4 hidden">Invalid email or password</p>
-        </div>
-    </div>
-
-    <!-- Admin Confirm Modal -->
-    <div id="admin-confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 hidden transition-opacity duration-300">
-        <div class="bg-black/50 backdrop-blur-xl border border-indigo-500/30 rounded-2xl max-w-sm w-full shadow-[0_0_40px_rgba(99,102,241,0.15)] overflow-hidden text-center transform transition-all duration-300 scale-100">
-            <div class="p-8">
-                <div class="w-16 h-16 bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center mx-auto mb-5 border border-indigo-500/20 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-                    <i data-lucide="alert-circle" class="w-8 h-8"></i>
-                </div>
-                <h3 class="text-2xl font-extrabold text-white mb-3 tracking-tight">Confirm Action</h3>
-                <p id="admin-confirm-message" class="text-slate-300 text-sm mb-8 leading-relaxed"></p>
-                <div class="flex gap-4">
-                    <button onclick="handleAdminConfirm(false)" class="w-full py-3 bg-slate-800/80 hover:bg-slate-700 border border-white/5 text-white rounded-xl font-semibold transition-all duration-200">Cancel</button>
-                    <button onclick="handleAdminConfirm(true)" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-white rounded-xl font-bold shadow-lg shadow-cyan-500/25 transition-all duration-200 transform hover:-translate-y-0.5">Confirm</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
-        let currentConfirmResolve = null;
-
-        function adminConfirm(message) {
-            return new Promise((resolve) => {
-                document.getElementById('admin-confirm-message').innerText = message;
-                document.getElementById('admin-confirm-modal').classList.remove('hidden');
-                lucide.createIcons();
-                currentConfirmResolve = resolve;
-            });
+        function showSuperModal(message, title="Notice") {
+            const modal = document.getElementById('super-app-modal');
+            const content = document.getElementById('super-app-modal-content');
+            document.getElementById('super-modal-title').textContent = title;
+            document.getElementById('super-modal-message').textContent = message;
+            
+            modal.classList.remove('hidden');
+            // Trigger reflow
+            void modal.offsetWidth;
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+            
+            lucide.createIcons();
         }
-
-        function handleAdminConfirm(result) {
-            document.getElementById('admin-confirm-modal').classList.add('hidden');
-            if (currentConfirmResolve) {
-                currentConfirmResolve(result);
-                currentConfirmResolve = null;
-            }
+        
+        function closeSuperModal() {
+            const modal = document.getElementById('super-app-modal');
+            const content = document.getElementById('super-app-modal-content');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200); // match transition duration
         }
     </script>
 
-    <!-- Main App Layout -->
-    <div id="dashboard-content" class="hidden flex h-screen w-full">
-        
-        <!-- Left Sidebar -->
-        <aside id="admin-sidebar" class="w-64 bg-surface border-r border-white/10 flex flex-col">
-            <div class="p-6 border-b border-white/10 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                        <i data-lucide="zap" class="w-4 h-4 text-white"></i>
-                    </div>
-                    <span class="font-bold text-lg tracking-tight">Admin Portal</span>
-                </div>
-                <button id="close-sidebar-btn" class="md:hidden text-slate-400 hover:text-white">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
+    <!-- Login Portal -->
+    <div id="login-overlay" class="fixed inset-0 bg-[#0B0E14] z-50 flex items-center justify-center">
+        <div class="glass-card p-8 rounded-2xl w-full max-w-md border border-purple-500/30 text-center">
+            <div class="w-16 h-16 bg-gradient-to-tr from-purple-600 to-indigo-500 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
+                <i data-lucide="shield-alert" class="w-8 h-8 text-white"></i>
             </div>
-            
-            <nav class="flex-1 p-4 space-y-2">
-                <div class="sidebar-item active" data-tab="tab-overview">
-                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-                    <span>Overview</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-users">
-                    <i data-lucide="users" class="w-5 h-5"></i>
-                    <span>User Management</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-recharges">
-                    <i data-lucide="smartphone" class="w-5 h-5"></i>
-                    <span>Recharges</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-payments">
-                    <i data-lucide="credit-card" class="w-5 h-5"></i>
-                    <span>Payment Dashboard</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-refunds">
-                    <i data-lucide="refresh-ccw" class="w-5 h-5"></i>
-                    <span>Refund Queue</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-settlements">
-                    <i data-lucide="landmark" class="w-5 h-5"></i>
-                    <span>Settlement Reports</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-fraud">
-                    <i data-lucide="shield-alert" class="w-5 h-5 text-red-400"></i>
-                    <span class="text-red-400">Fraud Controls</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-marketing">
-                    <i data-lucide="trending-up" class="w-5 h-5 text-amber-400"></i>
-                    <span class="text-amber-400">Marketing Data</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-growth">
-                    <i data-lucide="zap" class="w-5 h-5 text-emerald-400"></i>
-                    <span class="text-emerald-400">Growth Engine</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-analytics">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                    <span>Analytics Funnel</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-support">
-                    <i data-lucide="headphones" class="w-5 h-5"></i>
-                    <span>Support Tickets</span>
-                </div>
-                <div class="sidebar-item" data-tab="tab-settings">
-                    <i data-lucide="settings" class="w-5 h-5"></i>
-                    <span>Global Settings</span>
-                </div>
-            </nav>
-            
-            <div class="p-4 border-t border-white/10">
-                <div id="logout-btn" class="sidebar-item text-red-400 hover:text-red-300 hover:bg-red-500/10">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
-                    <span>Lock Dashboard</span>
-                </div>
-            </div>
-        </aside>
+            <h2 class="text-2xl font-bold mb-2">Operations Center</h2>
+            <p class="text-slate-400 mb-4 text-sm">Secure authorization required.</p>
+<div class="text-left mb-4">
+    <label class="block text-xs text-slate-400 mb-1">Role</label>
+    <select id="login-role" class="w-full bg-black/50 border border-purple-500/30 rounded-lg p-3 text-white outline-none focus:border-purple-500">
+        <option value="super">Super Admin</option>
+        <option value="admin">Operations Admin</option>
+        <option value="support">Support Executive</option>
+    </select>
+</div>
+            <input type="password" id="super-passcode" class="w-full bg-black/50 border border-purple-500/30 rounded-lg p-3 text-white text-center tracking-widest mb-4" placeholder="••••••••">
+            <button id="login-btn" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-purple-500/20">
+                AUTHENTICATE
+            </button>
+            <div id="login-error" class="text-red-400 text-sm hidden mt-4">Invalid Passcode</div>
+        </div>
+    </div>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto bg-dark p-8 w-full max-w-full">
-            <header class="flex justify-between items-center mb-8 pb-4 border-b border-white/10">
-                <div class="flex items-center gap-4">
-                    <button id="mobile-menu-btn" class="md:hidden text-slate-300 hover:text-white transition">
-                        <i data-lucide="menu" class="w-6 h-6"></i>
-                    </button>
-                    <h1 id="page-title" class="text-2xl font-bold">Dashboard Overview</h1>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 glass-card border-r border-white/5 flex flex-col hidden">
+        <div class="p-6 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-purple-600 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+                    <i data-lucide="crown" class="w-5 h-5 text-white"></i>
                 </div>
-                <div class="flex items-center gap-4">
-                    <span class="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/50 rounded-full text-xs font-bold flex items-center gap-2 hidden sm:flex">
-                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                        LIVE
-                    </span>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Super Admin</h1>
+                    <p class="text-xs text-purple-400">System Oversight</p>
                 </div>
+            </div>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-2">
+            <div class="sidebar-item active" data-tab="tab-audit">
+                <i data-lucide="activity" class="w-5 h-5"></i>
+                <span>Dashboard Overview</span>
+            </div>
+            <div class="sidebar-item" data-tab="tab-wallets">
+                <i data-lucide="wallet" class="w-5 h-5 text-emerald-400"></i>
+                <span class="text-emerald-400">User Wallets</span>
+            </div>
+            <div class="sidebar-item" data-tab="tab-apikeys">
+                <i data-lucide="key" class="w-5 h-5"></i>
+                <span>API & Gateway Keys</span>
+            </div>
+            <div class="sidebar-item" data-tab="tab-team">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span>Team & Admins</span>
+            </div>
+            <div class="sidebar-item" data-tab="tab-reports">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+                <span>Advanced Reports</span>
+            </div>
+            <div class="sidebar-item" data-tab="tab-coupons">
+                <i data-lucide="ticket" class="w-5 h-5"></i>
+                <span>Coupon Codes</span>
+            </div>
+            <div class="sidebar-item" data-tab="tab-cashback">
+                <i data-lucide="coins" class="w-5 h-5"></i>
+                <span>Cashback Rules</span>
+            </div>
+            <div class="sidebar-item" data-tab="tab-marketing">
+                <i data-lucide="megaphone" class="w-5 h-5"></i>
+                <span>Broadcasts</span>
+            </div>
+            <div class="sidebar-item" data-tab="tab-permissions">
+                <i data-lucide="shield" class="w-5 h-5 text-red-400"></i>
+                <span class="text-red-400">Admin Permissions</span>
+            </div>
+        </nav>
+
+        <div class="p-4 border-t border-white/5">
+            <button id="logout-btn" class="w-full sidebar-item justify-center text-red-400 hover:text-red-300 hover:bg-red-400/10">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+                <span>Lock System</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content" class="flex-1 overflow-y-auto hidden">
+        <div class="p-8 max-w-7xl mx-auto">
+            <header class="mb-8">
+                <h1 id="page-title" class="text-3xl font-bold text-white">Dashboard Overview</h1>
             </header>
 
-            <!-- TAB 1: OVERVIEW -->
-            <div id="tab-overview" class="tab-content active">
+            <!-- TAB: Wallets -->
+            
+            <!-- Dashboard Tab -->
+            <div id="tab-dashboard" class="tab-content active">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Executive Dashboard</h2>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="glass-card p-6 rounded-xl text-center">
-                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Revenue</h3>
-                        <div class="text-4xl font-bold text-primary" id="metric-revenue">₹0</div>
+                    <div class="glass-card p-6 border border-white/10 rounded-xl bg-black/20">
+                        <div class="text-sm text-slate-400 mb-1">Total Users</div>
+                        <div class="text-3xl font-bold">124,592</div>
+                        <div class="text-xs text-emerald-400 mt-2">+1.2% today</div>
                     </div>
-                    <div class="glass-card p-6 rounded-xl text-center">
-                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Refunded</h3>
-                        <div class="text-4xl font-bold text-red-500" id="metric-refunded">₹0</div>
+                    <div class="glass-card p-6 border border-white/10 rounded-xl bg-black/20">
+                        <div class="text-sm text-slate-400 mb-1">Today's Revenue</div>
+                        <div class="text-3xl font-bold">₹8.4M</div>
+                        <div class="text-xs text-emerald-400 mt-2">+14% vs yesterday</div>
                     </div>
-                    <div class="glass-card p-6 rounded-xl text-center">
-                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Successful Txns</h3>
-                        <div class="text-4xl font-bold text-white" id="metric-tx-count">0</div>
+                    <div class="glass-card p-6 border border-white/10 rounded-xl bg-black/20">
+                        <div class="text-sm text-slate-400 mb-1">Active Transactions</div>
+                        <div class="text-3xl font-bold">4,291</div>
+                        <div class="text-xs text-slate-400 mt-2">Past 24 hours</div>
                     </div>
-                    <div class="glass-card p-6 rounded-xl text-center">
-                        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Active Plans Sold</h3>
-                        <div class="text-4xl font-bold text-accent" id="metric-plans-count">0</div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <div class="glass-card rounded-xl overflow-hidden">
-                        <div class="p-6 border-b border-white/5 flex justify-between items-center">
-                            <h2 class="text-lg font-bold">Recent Transactions</h2>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead class="bg-white/5 text-slate-400 text-sm">
-                                    <tr>
-                                        <th class="p-4">Order ID</th>
-                                        <th class="p-4">User Identifier</th>
-                                        <th class="p-4">Amount</th>
-                                        <th class="p-4">Status</th>
-                                        <th class="p-4">Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tx-table-body" class="divide-y divide-white/5"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="glass-card rounded-xl overflow-hidden">
-                        <div class="p-6 border-b border-white/5">
-                            <h2 class="text-lg font-bold">Recent Plan Activations</h2>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead class="bg-white/5 text-slate-400 text-sm">
-                                    <tr>
-                                        <th class="p-4">Target Account</th>
-                                        <th class="p-4">Brand</th>
-                                        <th class="p-4">Plan Type</th>
-                                        <th class="p-4">Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="purchases-table-body" class="divide-y divide-white/5"></tbody>
-                            </table>
-                        </div>
+                    <div class="glass-card p-6 border border-white/10 rounded-xl bg-black/20">
+                        <div class="text-sm text-slate-400 mb-1">Success Rate</div>
+                        <div class="text-3xl font-bold">99.4%</div>
+                        <div class="text-xs text-red-400 mt-2">-0.1% vs average</div>
                     </div>
                 </div>
             </div>
 
-            <!-- NEW TAB: USERS -->
+            <!-- Users Tab -->
             <div id="tab-users" class="tab-content">
-                <div class="glass-card rounded-xl overflow-hidden mb-8">
-                    <div class="p-6 border-b border-white/10 flex justify-between items-center">
-                        <h2 class="text-xl font-bold">User Management</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">User Management</h2>
+                    <div class="flex gap-4">
+                        <input type="text" placeholder="Search phone or email..." class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-purple-500 outline-none">
+                        <button class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm transition">Export CSV</button>
                     </div>
+                </div>
+                <div class="glass-card border border-white/10 rounded-xl overflow-hidden bg-black/20">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse react-table">
-                            <thead>
-                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
-                                    <th class="p-4 font-semibold">Phone</th>
-                                    <th class="p-4 font-semibold">Status</th>
-                                    <th class="p-4 font-semibold">Created At</th>
-                                    <th class="p-4 font-semibold">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW TAB: RECHARGES -->
-            <div id="tab-recharges" class="tab-content">
-                <div class="mb-6">
-                    <h2 class="text-xl font-bold mb-4">Operator Analytics</h2>
-                    <div id="operator-analytics-container" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <!-- Injected via JS -->
-                    </div>
-                </div>
-
-                <div class="glass-card rounded-xl mb-8">
-                    <div class="p-6 border-b border-white/10 flex justify-between items-center">
-                        <h2 class="text-xl font-bold">Recharge Management</h2>
-                        <div class="relative inline-block text-left" id="custom-recharge-filter-container">
-                            <button type="button" onclick="toggleRechargeFilter()" class="flex items-center gap-2 bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white hover:bg-white/5 transition outline-none" id="custom-recharge-filter-btn">
-                                <span id="custom-recharge-filter-text">All</span>
-                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
-                            </button>
-                            <!-- Hidden input to store value -->
-                            <input type="hidden" id="recharge-filter" value="ALL">
-                            
-                            <div id="custom-recharge-dropdown" class="origin-top-right absolute right-0 mt-2 w-32 rounded-lg shadow-lg shadow-black/50 bg-[#1a1a24] border border-white/10 ring-1 ring-black ring-opacity-5 hidden z-50">
-                                <div class="py-1" role="menu">
-                                    <button onclick="setRechargeFilter('ALL', 'All')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">All</button>
-                                    <button onclick="setRechargeFilter('SUCCESS', 'Success')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Success</button>
-                                    <button onclick="setRechargeFilter('PENDING', 'Pending')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Pending</button>
-                                    <button onclick="setRechargeFilter('FAILED', 'Failed')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Failed</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse react-table">
-                            <thead>
-                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
-                                    <th class="p-4 font-semibold">Order ID</th>
-                                    <th class="p-4 font-semibold">User</th>
-                                    <th class="p-4 font-semibold">Amount</th>
-                                    <th class="p-4 font-semibold">Status</th>
-                                    <th class="p-4 font-semibold">Date</th>
-                                    <th class="p-4 font-semibold text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recharges-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW TAB: PAYMENTS -->
-            <div id="tab-payments" class="tab-content">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
-                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all"></div>
-                        <h3 class="text-slate-400 text-sm font-medium mb-1">Initiated Payments</h3>
-                        <div class="text-3xl font-bold text-white mb-2" id="pay-stat-initiated">0</div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="text-emerald-400 font-medium" id="pay-stat-success">0 Success</span>
-                            <span class="text-slate-500">•</span>
-                            <span class="text-amber-400 font-medium" id="pay-stat-pending">0 Pending</span>
-                            <span class="text-slate-500">•</span>
-                            <span class="text-red-400 font-medium" id="pay-stat-failed">0 Failed</span>
-                        </div>
-                    </div>
-                    <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
-                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
-                        <h3 class="text-slate-400 text-sm font-medium mb-1">Total Revenue</h3>
-                        <div class="text-3xl font-bold text-white mb-2" id="pay-stat-revenue">₹0.00</div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="text-emerald-400 font-medium flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> Settled: <span id="pay-stat-settled">₹0</span></span>
-                        </div>
-                    </div>
-                    <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
-                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/20 transition-all"></div>
-                        <h3 class="text-slate-400 text-sm font-medium mb-1">Refunds Processed</h3>
-                        <div class="text-3xl font-bold text-white mb-2" id="pay-stat-refunds">₹0.00</div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <button onclick="switchTab('tab-refunds')" class="text-rose-400 hover:text-rose-300 font-medium flex items-center gap-1 transition-colors">View Queue <i data-lucide="arrow-right" class="w-3 h-3"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-card rounded-xl mb-8">
-                    <div class="p-6 border-b border-white/10 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-bold">Payment Transactions</h2>
-                            <p class="text-sm text-slate-400">Real-time logs from Cashfree.</p>
-                        </div>
-                        <div class="relative inline-block text-left" id="custom-payment-filter-container">
-                            <button type="button" onclick="togglePaymentFilter()" class="flex items-center gap-2 bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white hover:bg-white/5 transition outline-none" id="custom-payment-filter-btn">
-                                <span id="custom-payment-filter-text">All Status</span>
-                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
-                            </button>
-                            <input type="hidden" id="payment-status-filter" value="ALL">
-                            
-                            <div id="custom-payment-dropdown" class="origin-top-right absolute right-0 mt-2 w-36 rounded-lg shadow-lg shadow-black/50 bg-[#1a1a24] border border-white/10 ring-1 ring-black ring-opacity-5 hidden z-50">
-                                <div class="py-1" role="menu">
-                                    <button onclick="setPaymentFilter('ALL', 'All Status')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">All Status</button>
-                                    <button onclick="setPaymentFilter('SUCCESS', 'Success')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Success</button>
-                                    <button onclick="setPaymentFilter('PENDING', 'Pending')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Pending</button>
-                                    <button onclick="setPaymentFilter('FAILED', 'Failed')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Failed</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto min-h-[250px]">
-                        <table class="w-full text-left border-collapse react-table">
-                            <thead>
-                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
-                                    <th class="p-4 font-semibold">Order ID</th>
-                                    <th class="p-4 font-semibold">CF Payment ID</th>
-                                    <th class="p-4 font-semibold">Amount</th>
-                                    <th class="p-4 font-semibold">Payment Status</th>
-                                    <th class="p-4 font-semibold">Recharge Status</th>
-                                    <th class="p-4 font-semibold">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="payments-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW TAB: REFUNDS -->
-            <div id="tab-refunds" class="tab-content">
-                <div class="glass-card rounded-xl mb-8 border border-rose-500/20">
-                    <div class="p-6 border-b border-white/10 bg-rose-500/5 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-bold text-rose-400 flex items-center gap-2">
-                                <i data-lucide="refresh-ccw" class="w-6 h-6"></i>
-                                Refund Queue
-                            </h2>
-                            <p class="text-sm text-slate-400 mt-1">Manage user refunds for failed recharges.</p>
-                        </div>
-                        <div class="relative inline-block text-left" id="custom-refund-filter-container">
-                            <button type="button" onclick="toggleRefundFilter()" class="flex items-center gap-2 bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white hover:bg-white/5 transition outline-none" id="custom-refund-filter-btn">
-                                <span id="custom-refund-filter-text">Pending</span>
-                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
-                            </button>
-                            <input type="hidden" id="refund-filter" value="PENDING">
-                            
-                            <div id="custom-refund-dropdown" class="origin-top-right absolute right-0 mt-2 w-32 rounded-lg shadow-lg shadow-black/50 bg-[#1a1a24] border border-white/10 ring-1 ring-black ring-opacity-5 hidden z-50">
-                                <div class="py-1" role="menu">
-                                    <button onclick="setRefundFilter('ALL', 'All')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">All</button>
-                                    <button onclick="setRefundFilter('PENDING', 'Pending')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Pending</button>
-                                    <button onclick="setRefundFilter('APPROVED', 'Approved')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Approved</button>
-                                    <button onclick="setRefundFilter('REJECTED', 'Rejected')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Rejected</button>
-                                    <button onclick="setRefundFilter('RETRYING', 'Retrying')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Retrying</button>
-                                    <button onclick="setRefundFilter('REFUNDED', 'Refunded')" class="text-white block px-4 py-2 text-sm w-full text-left hover:bg-white/10 transition">Refunded</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto min-h-[300px]">
-                        <table class="w-full text-left border-collapse react-table">
-                            <thead>
-                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
-                                    <th class="p-4 font-semibold">Order ID</th>
-                                    <th class="p-4 font-semibold">User</th>
-                                    <th class="p-4 font-semibold">Amount</th>
-                                    <th class="p-4 font-semibold w-1/3">Reason</th>
-                                    <th class="p-4 font-semibold">Status</th>
-                                    <th class="p-4 font-semibold">Date</th>
-                                    <th class="p-4 font-semibold text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="refunds-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW TAB: SETTLEMENTS -->
-            <div id="tab-settlements" class="tab-content">
-                <div class="glass-card rounded-xl mb-8 border border-indigo-500/20">
-                    <div class="p-6 border-b border-white/10 bg-indigo-500/5 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-bold text-indigo-400 flex items-center gap-2">
-                                <i data-lucide="landmark" class="w-6 h-6"></i>
-                                Settlement Reports
-                            </h2>
-                            <p class="text-sm text-slate-400 mt-1">Daily reconciliation of collections vs gateway fees.</p>
-                        </div>
-                        <button onclick="exportSettlementsCSV()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-                            <i data-lucide="download" class="w-4 h-4"></i> Export CSV
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse react-table">
-                            <thead>
-                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
-                                    <th class="p-4 font-semibold">Date</th>
-                                    <th class="p-4 font-semibold">Collection</th>
-                                    <th class="p-4 font-semibold">Fees</th>
-                                    <th class="p-4 font-semibold">Net Settlement</th>
-                                    <th class="p-4 font-semibold">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="settlements-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW TAB: FRAUD CONTROLS -->
-            <div id="tab-fraud" class="tab-content">
-                <div class="glass-card rounded-xl mb-8 border border-red-500/20">
-                    <div class="p-6 border-b border-white/10 bg-red-500/5 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-bold text-red-400 flex items-center gap-2">
-                                <i data-lucide="shield-alert" class="w-6 h-6"></i>
-                                Auto-Fraud Alerts
-                            </h2>
-                            <p class="text-sm text-slate-400 mt-1">Signals caught by the backend rules engine (IP, Device, Rate limits).</p>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse react-table">
-                            <thead>
-                                <tr class="text-slate-400 text-sm border-b border-white/10 bg-white/5">
-                                    <th class="p-4 font-semibold">Phone</th>
-                                    <th class="p-4 font-semibold">Event Type</th>
-                                    <th class="p-4 font-semibold">Trigger Details</th>
-                                    <th class="p-4 font-semibold">IP / Device</th>
-                                    <th class="p-4 font-semibold">Time</th>
-                                    <th class="p-4 font-semibold">Status</th>
-                                    <th class="p-4 font-semibold">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="fraud-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW TAB: MARKETING DATA -->
-            <div id="tab-marketing" class="tab-content">
-                <div class="glass-card rounded-xl mb-8">
-                    <div class="p-6 border-b border-white/10">
-                        <h2 class="text-xl font-bold text-amber-400 flex items-center gap-2">
-                            <i data-lucide="trending-up" class="w-6 h-6"></i>
-                            Marketing Data (Gold Mine)
-                        </h2>
-                        <p class="text-sm text-slate-400 mt-1">Discover popular plans, most recharged amounts, and user acquisition.</p>
-                    </div>
-                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-black/30 p-6 rounded-xl border border-white/5">
-                            <h3 class="font-bold text-lg mb-4 text-white">Most Searched Plans</h3>
-                            <ul id="marketing-popular-plans" class="space-y-3">
-                                <!-- Populated by JS -->
-                                <li class="text-slate-400 text-sm">Loading...</li>
-                            </ul>
-                        </div>
-                        <div class="bg-black/30 p-6 rounded-xl border border-white/5">
-                            <h3 class="font-bold text-lg mb-4 text-white">Most Recharged Amounts</h3>
-                            <div class="flex flex-wrap gap-2" id="marketing-top-amounts">
-                                <!-- Populated by JS -->
-                                <span class="px-3 py-1 bg-white/10 rounded-full text-sm text-white">Loading...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW TAB: GROWTH ENGINE -->
-            <div id="tab-growth" class="tab-content">
-                <div class="glass-card rounded-xl overflow-hidden mb-8">
-                    <div class="p-6 border-b border-white/10">
-                        <h2 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
-                            <i data-lucide="zap" class="w-6 h-6"></i>
-                            Growth Engine Controls
-                        </h2>
-                        <p class="text-sm text-slate-400 mt-1">Manage Referrals, Smart Cashback, and Loyalty Levels.</p>
-                    </div>
-                    
-                    <div class="p-6 space-y-8">
-                        <!-- Referral System -->
-                        <div>
-                            <h3 class="text-lg font-bold mb-4 text-white flex items-center gap-2">🤝 Referral System</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Referrer Reward (₹)</label>
-                                    <input type="number" id="growth-ref-referrer" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="20">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">New User Reward (₹)</label>
-                                    <input type="number" id="growth-ref-referred" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="20">
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr class="border-white/10">
-
-                        <!-- Smart Cashback -->
-                        <div>
-                            <h3 class="text-lg font-bold mb-4 text-white flex items-center gap-2">💸 Smart Cashback</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">First Recharge Cashback (₹)</label>
-                                    <input type="number" id="growth-cb-first" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="0">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Weekend Extra Cashback (₹)</label>
-                                    <input type="number" id="growth-cb-weekend" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="0">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <hr class="border-white/10">
-                        
-                        <!-- Loyalty Levels -->
-                        <div>
-                            <h3 class="text-lg font-bold mb-4 text-white flex items-center gap-2">🏅 Loyalty Levels (Min Points)</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Silver Threshold</label>
-                                    <input type="number" id="growth-loy-silver" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="0">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Gold Threshold</label>
-                                    <input type="number" id="growth-loy-gold" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="500">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Platinum Threshold</label>
-                                    <input type="number" id="growth-loy-platinum" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="2000">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="pt-4">
-                            <button onclick="saveGrowthSettings()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                                Save Growth Rules
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 2: ANALYTICS -->
-            <div id="tab-analytics" class="tab-content">
-                <div class="glass-card rounded-xl p-8 mb-8">
-                    <h2 class="text-xl font-bold mb-8">Conversion Funnel</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
-                            <h4 class="text-slate-400 text-sm mb-2">Total Visitors</h4>
-                            <div id="funnel-visits" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
-                            <h4 class="text-slate-400 text-sm mb-2">Entered Number</h4>
-                            <div id="funnel-entered" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
-                            <h4 class="text-slate-400 text-sm mb-2">Verified OTP</h4>
-                            <div id="funnel-logged" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-white/5 p-6 rounded-xl border border-white/10">
-                            <h4 class="text-slate-400 text-sm mb-2">Checkout Started</h4>
-                            <div id="funnel-checkout" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-primary/10 p-6 rounded-xl border border-primary/30">
-                            <h4 class="text-primary text-sm mb-2 font-bold">Purchased</h4>
-                            <div id="funnel-purchased" class="text-3xl font-bold text-primary">0</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="glass-card rounded-xl overflow-hidden mt-8">
-                    <div class="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
-                        <h2 class="text-lg font-bold">Sales Leads (Funnel Drop-offs)</h2>
-                        <span class="text-sm text-slate-400">Contacts captured from visitors</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="data-table w-full">
-                            <thead>
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-white/5 border-b border-white/10">
                                 <tr>
-                                    <th>Phone / Email</th>
-                                    <th>Furthest Stage Reached</th>
-                                    <th>Last Active</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leads-table-body">
-                                <tr><td colspan="4" class="text-center py-8 text-slate-500">Loading leads...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 3: SUPPORT -->
-            <div id="tab-support" class="tab-content">
-                <div id="react-tickets-root"></div>
-            </div>
-
-            <!-- TAB 4: SETTINGS -->
-            <div id="tab-settings" class="tab-content">
-                <div class="glass-card rounded-xl p-8 max-w-2xl">
-                    <h2 class="text-xl font-bold mb-6">AI Assistant Configuration</h2>
-                    
-                    <div class="mb-6">
-                        <label class="block text-sm font-semibold text-slate-400 mb-2">🤖 Assistant Name</label>
-                        <p class="text-slate-500 text-sm mb-4">This name will be updated instantly on the public website for all users.</p>
-                        <div class="flex gap-4">
-                            <input type="text" id="admin-assistant-name" placeholder="e.g. OnlineRecharge" class="flex-1 p-3 rounded-lg border border-white/20 bg-black/50 text-white outline-none focus:border-primary">
-                            <button id="save-assistant-name" class="primary-glow-btn px-6 py-3">Save Changes</button>
-                        </div>
-                        <p id="save-settings-msg" class="text-green-400 mt-3 text-sm hidden flex items-center gap-2">
-                            <i data-lucide="check-circle" class="w-4 h-4"></i> Successfully updated!
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- USER DETAILS MODAL -->
-            <div id="user-details-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden transition-opacity duration-300">
-                <div class="bg-black/50 backdrop-blur-xl border border-white/10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 relative shadow-[0_0_50px_rgba(0,0,0,0.5)] transform transition-all duration-300 scale-100">
-                    <button onclick="closeUserModal()" class="absolute top-6 right-6 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xl leading-none transition-all duration-200 z-10">
-                        &times;
-                    </button>
-                    
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-white text-2xl font-bold" id="um-avatar">
-                            <i data-lucide="user"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-bold" id="um-phone">User Phone</h2>
-                            <p class="text-slate-400" id="um-joined">Joined: ...</p>
-                        </div>
-                        <div class="ml-auto flex gap-3 pr-12" id="um-actions">
-                            <!-- Action buttons injected via JS -->
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
-                            <p class="text-sm text-slate-400">Wallet Balance</p>
-                            <p class="text-2xl font-bold text-emerald-400" id="um-wallet">₹0.00</p>
-                        </div>
-                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
-                            <p class="text-sm text-slate-400">Loyalty Tier</p>
-                            <p class="text-2xl font-bold text-purple-400" id="um-loyalty">Silver</p>
-                        </div>
-                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
-                            <p class="text-sm text-slate-400">Status</p>
-                            <p class="text-2xl font-bold" id="um-status">ACTIVE</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Login History -->
-                        <div>
-                            <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="log-in" class="w-5 h-5"></i> Login History</h3>
-                            <div class="bg-black/40 rounded-xl border border-white/5 overflow-hidden max-h-[300px] overflow-y-auto">
-                                <table class="w-full text-left text-sm">
-                                    <thead class="bg-white/5 text-slate-400">
-                                        <tr>
-                                            <th class="p-3">Time</th>
-                                            <th class="p-3">IP / Location</th>
-                                            <th class="p-3">Device</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="um-logins-body" class="divide-y divide-white/5">
-                                        <!-- JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Fraud Alerts -->
-                        <div>
-                            <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-rose-400"><i data-lucide="alert-triangle" class="w-5 h-5"></i> Fraud Alerts</h3>
-                            <div class="bg-black/40 rounded-xl border border-white/5 p-4 min-h-[300px] max-h-[300px] overflow-y-auto" id="um-fraud-body">
-                                <!-- JS -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- RECHARGE DETAILS MODAL -->
-            <div id="recharge-details-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden transition-opacity duration-300">
-                <div class="bg-black/50 backdrop-blur-xl border border-white/10 w-full max-w-2xl overflow-y-auto rounded-3xl p-8 relative shadow-[0_0_50px_rgba(0,0,0,0.5)] transform transition-all duration-300 scale-100">
-                    <button onclick="closeRechargeModal()" class="absolute top-6 right-6 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xl leading-none transition-all duration-200 z-10">
-                        &times;
-                    </button>
-                    
-                    <div class="flex items-center gap-4 mb-6 pr-12">
-                        <div class="w-16 h-16 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white text-2xl shadow-lg" id="rm-icon">
-                            <i data-lucide="smartphone"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-bold" id="rm-orderid">Order ID</h2>
-                            <p class="text-slate-400" id="rm-date">Date: ...</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
-                            <p class="text-sm text-slate-400">User</p>
-                            <p class="text-lg font-bold text-white" id="rm-user">Phone</p>
-                        </div>
-                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
-                            <p class="text-sm text-slate-400">Operator</p>
-                            <p class="text-lg font-bold text-purple-400" id="rm-operator">Unknown</p>
-                        </div>
-                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
-                            <p class="text-sm text-slate-400">Amount</p>
-                            <p class="text-lg font-bold text-emerald-400" id="rm-amount">₹0.00</p>
-                        </div>
-                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
-                            <p class="text-sm text-slate-400">Status</p>
-                            <p class="text-lg font-bold" id="rm-status">PENDING</p>
-                        </div>
-                    </div>
-
-                    <div class="border-t border-white/10 pt-6">
-                        <h3 class="font-bold text-lg mb-4 text-white">Operations Actions</h3>
-                        <div class="flex flex-wrap gap-3" id="rm-actions">
-                            <!-- Injected via JS -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-    </div>
-
-    <!-- React Tickets Component -->
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        function TicketDashboard() {
-            const [tickets, setTickets] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-            const [expandedRow, setExpandedRow] = useState(null);
-            const [toast, setToast] = useState(null);
-            const [confirmDialog, setConfirmDialog] = useState(null);
-
-            const showToast = (message, type = 'success') => {
-                setToast({ message, type });
-                setTimeout(() => setToast(null), 5000);
-            };
-
-            const fetchTickets = () => {
-                setLoading(true);
-                fetch('/api/support/tickets')
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            setTickets(data.tickets || []);
-                            setError(null);
-                        } else {
-                            setError(data.error || "Failed to load tickets");
-                        }
-                        setLoading(false);
-                    })
-                    .catch(err => {
-                        setError("Failed to connect to backend: " + err.message);
-                        setLoading(false);
-                    });
-            };
-
-            useEffect(() => {
-                if (sessionStorage.getItem('admin-passcode')) {
-                    fetchTickets();
-                }
-                const interval = setInterval(() => {
-                    if (sessionStorage.getItem('admin-passcode') && !confirmDialog) fetchTickets();
-                }, 10000);
-                window.addEventListener('admin-unlocked', fetchTickets);
-                return () => {
-                    clearInterval(interval);
-                    window.removeEventListener('admin-unlocked', fetchTickets);
-                };
-            }, [confirmDialog]);
-
-            const updateStatus = (ticketId, newStatus) => {
-                if (newStatus === 'REFUNDED') {
-                    setConfirmDialog({
-                        ticketId,
-                        newStatus,
-                        message: "Are you sure you want to refund this ticket?\n\nThis will instantly return the money to the customer's bank account and CANNOT be undone!"
-                    });
-                    return;
-                }
-                processStatusUpdate(ticketId, newStatus);
-            };
-
-            const processStatusUpdate = (ticketId, newStatus) => {
-                fetch(`/api/support/tickets/${ticketId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setTickets(prevTickets => prevTickets.map(t => t.ticket_id === ticketId ? { ...t, status: newStatus } : t));
-                        if (data.refund_message) {
-                            showToast("Automated Refund:\n" + data.refund_message, 'success');
-                            const passcode = sessionStorage.getItem('admin-passcode');
-                            if (passcode) {
-                                fetch('/api/admin/data', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ passcode })
-                                })
-                                .then(r => r.json())
-                                .then(d => { if(d.success) renderDashboard(d); });
-                            }
-                        } else {
-                            showToast(`Ticket status updated to ${newStatus}`, 'success');
-                        }
-                    } else {
-                        showToast("Failed to update status: " + data.error, 'error');
-                        fetchTickets();
-                    }
-                })
-                .catch(err => {
-                    showToast("Error: " + err.message, 'error');
-                    fetchTickets();
-                });
-            };
-
-            const getStatusBadge = (status) => {
-                const base = "px-3 py-1 rounded-full text-xs font-bold border ";
-                switch(status) {
-                    case 'OPEN': return base + 'bg-red-500/20 text-red-400 border-red-500/50';
-                    case 'IN_PROGRESS': return base + 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
-                    case 'RESOLVED': return base + 'bg-green-500/20 text-green-400 border-green-500/50';
-                    case 'REFUNDED': return base + 'bg-green-500/20 text-green-400 border-green-500/50';
-                    default: return base + 'bg-gray-500/20 text-gray-400 border-gray-500/50';
-                }
-            };
-
-            if (error) return <div className="text-red-400 p-4 bg-red-900/20 border border-red-900/50 rounded-lg">Error: {error}</div>;
-
-            return (
-                <div className="glass-card rounded-xl overflow-hidden relative" style={{ minHeight: '400px' }}>
-                    {/* Toast Notification */}
-                    {toast && (
-                        <div className={`absolute top-4 right-4 z-50 p-4 rounded-lg shadow-lg border backdrop-blur-md transition-all flex items-start gap-3 max-w-sm ${toast.type === 'error' ? 'bg-red-500/20 border-red-500/50 text-red-100' : 'bg-green-500/20 border-green-500/50 text-green-100'}`}>
-                            <div className="text-sm whitespace-pre-wrap font-medium">{toast.message}</div>
-                            <button onClick={() => setToast(null)} className="ml-auto opacity-70 hover:opacity-100 text-lg leading-none">&times;</button>
-                        </div>
-                    )}
-                    
-                    {/* Confirm Modal */}
-                    {confirmDialog && (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                            <div className="bg-[#1a1a24] border border-red-500/30 rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
-                                <div className="p-4 border-b border-white/5 bg-red-500/10 flex items-center gap-3">
-                                    <h3 className="text-red-400 font-bold flex items-center gap-2">⚠️ Confirm Critical Action</h3>
-                                </div>
-                                <div className="p-6">
-                                    <p className="text-slate-300 text-sm whitespace-pre-wrap mb-6 leading-relaxed">
-                                        {confirmDialog.message}
-                                    </p>
-                                    <div className="flex gap-3 justify-end">
-                                        <button 
-                                            onClick={() => { setConfirmDialog(null); fetchTickets(); }}
-                                            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button 
-                                            onClick={() => {
-                                                const { ticketId, newStatus } = confirmDialog;
-                                                setConfirmDialog(null);
-                                                processStatusUpdate(ticketId, newStatus);
-                                            }}
-                                            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition shadow-[0_0_15px_rgba(239,68,68,0.3)]"
-                                        >
-                                            Yes, Process Refund
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
-                        <h2 className="text-lg font-bold">Support Center</h2>
-                        <button onClick={fetchTickets} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition border border-white/10 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                                <path d="M3 3v5h5"/>
-                            </svg>
-                            Refresh Data
-                        </button>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="react-table">
-                            <thead>
-                                <tr>
-                                    <th>Ticket ID</th>
-                                    <th>Status</th>
-                                    <th>User Phone</th>
-                                    <th>Issue Type</th>
-                                    <th>Target Number</th>
-                                    <th>Actions</th>
+                                    <th class="p-4 font-semibold text-slate-300">User ID</th>
+                                    <th class="p-4 font-semibold text-slate-300">Name / Email</th>
+                                    <th class="p-4 font-semibold text-slate-300">Phone</th>
+                                    <th class="p-4 font-semibold text-slate-300">Status</th>
+                                    <th class="p-4 font-semibold text-slate-300">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {loading && tickets.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center py-8 text-slate-500">Loading tickets...</td></tr>
-                                ) : tickets.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center py-8 text-slate-500">No tickets found in database.</td></tr>
-                                ) : tickets.map(ticket => (
-                                    <React.Fragment key={ticket.id}>
-                                        <tr className="cursor-pointer hover:bg-white/5 transition" onClick={() => setExpandedRow(expandedRow === ticket.id ? null : ticket.id)}>
-                                            <td className="font-semibold">{ticket.ticket_id}</td>
-                                            <td>
-                                                <select 
-                                                    value={ticket.status}
-                                                    disabled={ticket.status === 'REFUNDED'}
-                                                    onChange={(e) => { e.stopPropagation(); updateStatus(ticket.ticket_id, e.target.value); }}
-                                                    className={`bg-black/50 border border-white/10 text-white text-xs rounded-lg p-2 outline-none ${ticket.status === 'REFUNDED' ? 'opacity-50 cursor-not-allowed' : 'focus:border-primary'}`}
-                                                >
-                                                    <option value="OPEN">OPEN</option>
-                                                    <option value="IN_PROGRESS">IN PROGRESS</option>
-                                                    <option value="RESOLVED">RESOLVED</option>
-                                                    <option value="REFUNDED">REFUNDED</option>
-                                                </select>
-                                            </td>
-                                            <td>{ticket.user_phone}</td>
-                                            <td className="text-accent">{ticket.issue_type}</td>
-                                            <td>{ticket.target_number || 'N/A'}</td>
-                                            <td>
-                                                <button className="text-primary hover:text-white transition text-sm flex items-center gap-1">
-                                                    {expandedRow === ticket.id ? 'Hide Details' : 'View Details'}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        {expandedRow === ticket.id && (
-                                            <tr className="bg-black/20">
-                                                <td colSpan="6" className="p-6">
-                                                    <div className="grid grid-cols-2 gap-8">
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Description</h4>
-                                                            <p className="text-slate-300 text-sm whitespace-pre-wrap bg-black/40 p-4 rounded-lg border border-white/5">
-                                                                {ticket.description}
-                                                            </p>
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Metadata</h4>
-                                                            <div className="bg-black/40 p-4 rounded-lg border border-white/5 space-y-2 text-sm">
-                                                                <div className="flex justify-between border-b border-white/5 pb-2">
-                                                                    <span className="text-slate-400">Created At:</span>
-                                                                    <span>{new Date(ticket.created_at).toLocaleString()}</span>
-                                                                </div>
-                                                                <div className="flex justify-between border-b border-white/5 pb-2">
-                                                                    <span className="text-slate-400">Database ID:</span>
-                                                                    <span>{ticket.id}</span>
-                                                                </div>
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-slate-400">Current Status:</span>
-                                                                    <span className={getStatusBadge(ticket.status)}>{ticket.status}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </React.Fragment>
-                                ))}
+                                <tr class="border-b border-white/5 hover:bg-white/5">
+                                    <td class="p-4 font-mono text-purple-400">USR-8910</td>
+                                    <td class="p-4">Rahul Sharma<br><span class="text-xs text-slate-400">rahul.s@example.com</span></td>
+                                    <td class="p-4">9876543210</td>
+                                    <td class="p-4"><span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full text-xs">Active</span></td>
+                                    <td class="p-4"><button class="text-purple-400 hover:text-purple-300 underline text-xs">View Profile</button></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-            );
-        }
+            </div>
 
-        class ErrorBoundary extends React.Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null, errorInfo: null };
-            }
-            static getDerivedStateFromError(error) {
-                return { hasError: true };
-            }
-            componentDidCatch(error, errorInfo) {
-                this.setState({ error: error, errorInfo: errorInfo });
-            }
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div style={{ padding: '20px', background: '#ffcccc', color: 'black' }}>
-                            <h2>React Crashed!</h2>
-                            <details style={{ whiteSpace: 'pre-wrap' }}>
-                                {this.state.error && this.state.error.toString()}
-                                <br />
-                                {this.state.errorInfo && this.state.errorInfo.componentStack}
-                            </details>
+            <!-- Transactions Tab -->
+            <div id="tab-transactions" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Transaction Ledger</h2>
+                    <div class="flex gap-4">
+                        <input type="text" placeholder="Search Ref ID..." class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-purple-500 outline-none">
+                        <select class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-purple-500 outline-none">
+                            <option>All Statuses</option><option>Success</option><option>Failed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="glass-card border border-white/10 rounded-xl overflow-hidden bg-black/20">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-white/5 border-b border-white/10">
+                                <tr>
+                                    <th class="p-4 font-semibold text-slate-300">Txn ID / Ref</th>
+                                    <th class="p-4 font-semibold text-slate-300">Service</th>
+                                    <th class="p-4 font-semibold text-slate-300">Amount</th>
+                                    <th class="p-4 font-semibold text-slate-300">Status</th>
+                                    <th class="p-4 font-semibold text-slate-300">Date / Time</th>
+                                    <th class="p-4 font-semibold text-slate-300">Gateway</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-white/5 hover:bg-white/5">
+                                    <td class="p-4 font-mono text-purple-400">TXN-909281<br><span class="text-xs text-slate-400">Bnk-892</span></td>
+                                    <td class="p-4 font-medium">Electricity</td>
+                                    <td class="p-4">₹1,240</td>
+                                    <td class="p-4"><span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full text-xs">Success</span></td>
+                                    <td class="p-4 text-slate-400 text-xs">2026-07-05 11:24</td>
+                                    <td class="p-4 text-xs text-slate-400 underline cursor-pointer">Razorpay JSON</td>
+                                </tr>
+                                <tr class="border-b border-white/5 hover:bg-white/5">
+                                    <td class="p-4 font-mono text-purple-400">TXN-909282<br><span class="text-xs text-slate-400">Bnk-893</span></td>
+                                    <td class="p-4 font-medium">FASTag</td>
+                                    <td class="p-4">₹500</td>
+                                    <td class="p-4"><span class="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded-full text-xs">Failed</span></td>
+                                    <td class="p-4 text-slate-400 text-xs">2026-07-05 11:15</td>
+                                    <td class="p-4 text-xs text-slate-400 underline cursor-pointer">PayU JSON</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Tab -->
+            <div id="tab-support" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Support Center</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass-card p-4 border border-white/10 rounded-xl bg-black/20">
+                        <h3 class="font-bold flex items-center gap-2 mb-4"><div class="w-2 h-2 bg-red-500 rounded-full"></div> Open Tickets</h3>
+                        <div class="bg-black/40 p-3 rounded-lg border border-white/5 cursor-pointer hover:border-purple-500/50 mb-3">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-mono text-purple-400">#TK-8992</span>
+                                <span class="text-[10px] text-slate-400">10m ago</span>
+                            </div>
+                            <div class="font-medium text-sm mb-1">Recharge failed but money deducted</div>
+                            <div class="text-xs text-slate-400">User: 9876543210</div>
                         </div>
-                    );
-                }
-                return this.props.children;
-            }
-        }
+                    </div>
+                    <div class="glass-card p-4 border border-white/10 rounded-xl bg-black/20">
+                        <h3 class="font-bold flex items-center gap-2 mb-4"><div class="w-2 h-2 bg-amber-500 rounded-full"></div> In Progress</h3>
+                    </div>
+                    <div class="glass-card p-4 border border-white/10 rounded-xl bg-black/20">
+                        <h3 class="font-bold flex items-center gap-2 mb-4"><div class="w-2 h-2 bg-emerald-500 rounded-full"></div> Resolved</h3>
+                    </div>
+                </div>
+            </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('react-tickets-root'));
-        root.render(
-            <ErrorBoundary>
-                <TicketDashboard />
-            </ErrorBoundary>
-        );
-    </script>
+            <!-- Content CMS Tab -->
+            <div id="tab-content" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Content CMS</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 border border-white/10 rounded-xl bg-black/20">
+                        <h3 class="font-bold mb-4">Homepage Banners</h3>
+                        <div class="border border-white/10 rounded-lg p-4 bg-black/40 flex items-center justify-between">
+                            <div class="font-medium">Summer FASTag Promo</div>
+                            <button class="text-xs bg-white/10 px-2 py-1 rounded">Edit</button>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 border border-white/10 rounded-xl bg-black/20">
+                        <h3 class="font-bold mb-4">Legal & FAQs</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-sm border-b border-white/5 pb-2"><span>Privacy Policy</span> <button class="text-purple-400">Edit</button></div>
+                            <div class="flex justify-between text-sm border-b border-white/5 pb-2"><span>Terms & Conditions</span> <button class="text-purple-400">Edit</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settings Tab -->
+            <div id="tab-settings" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Global Settings</h2>
+                </div>
+                <div class="glass-card p-6 border border-white/10 rounded-xl bg-black/20 max-w-2xl">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium">Payment Gateway Routing</span>
+                            <select class="bg-black/50 border border-white/10 rounded-lg px-3 py-1 text-sm text-white"><option>Razorpay</option><option>PayU</option></select>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium">Maintenance Mode</span>
+                            <div class="w-10 h-5 bg-slate-700 rounded-full relative"><div class="w-3 h-3 bg-slate-400 rounded-full absolute top-1 left-1"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- REFUND DETAILS MODAL -->
-    <div id="refund-details-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center">
-        <div class="bg-[#1a1a24] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i data-lucide="info" class="w-5 h-5 text-rose-400"></i>
-                    Refund Details
-                </h3>
-                <button onclick="closeRefundModal()" class="text-slate-400 hover:text-white transition">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
+            <div id="tab-wallets" class="tab-content">
+                <div class="glass-card rounded-xl p-6 border border-emerald-500/20">
+                    <h2 class="text-xl font-bold text-emerald-400 mb-6 flex items-center gap-2"><i data-lucide="wallet"></i> User Wallet Control</h2>
+                    <div class="mb-4 flex gap-4">
+                        <input type="text" id="wallet-search-phone" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white" placeholder="Search User Phone...">
+                        <button onclick="searchWallets()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 rounded-lg">Search</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-white/5 text-slate-400 text-sm">
+                                <tr><th class="p-4">Phone</th><th class="p-4">Balance</th><th class="p-4">Joined</th><th class="p-4">Action</th></tr>
+                            </thead>
+                            <tbody id="wallets-table-body" class="divide-y divide-white/5"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="p-6 overflow-y-auto" id="refund-modal-content">
-                <!-- Dynamic Content -->
+
+            <!-- TAB: API Keys -->
+            <div id="tab-apikeys" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="glass-card rounded-xl p-6 border border-purple-500/20">
+                        <h2 class="text-xl font-bold text-purple-400 mb-4">Recharge API & Margins</h2>
+                        <label class="block text-sm text-slate-400 mb-2">Provider</label>
+                        <select id="prov-gateway" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white mb-4">
+                            <option value="Cashfree">Cashfree</option>
+                            <option value="Razorpay">Razorpay</option>
+                        </select>
+                        <label class="block text-sm text-slate-400 mb-2">Margin (%)</label>
+                        <input type="number" id="prov-margin" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white mb-4" value="2.5">
+                        <button onclick="saveProvider()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg w-full">Save API</button>
+                    </div>
+                    
+                    <div class="glass-card rounded-xl p-6 border border-purple-500/20">
+                        <h2 class="text-xl font-bold text-purple-400 mb-4">Payment Gateway Keys</h2>
+                        <label class="block text-sm text-slate-400 mb-2">Cashfree Client ID</label>
+                        <input type="text" id="cf-client-id" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white mb-4">
+                        <label class="block text-sm text-slate-400 mb-2">Cashfree Secret</label>
+                        <input type="password" id="cf-secret" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white mb-4" placeholder="••••••••">
+                        <button onclick="saveGatewayKeys()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg w-full">Save Keys</button>
+                    </div>
+                    
+                    <div class="glass-card rounded-xl p-6 border border-purple-500/20 md:col-span-2">
+                        <h2 class="text-xl font-bold text-purple-400 mb-4">BBPS Settings</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-2">BBPS Enabled</label>
+                                <select id="bbps-enabled" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white">
+                                    <option value="true">Enabled</option>
+                                    <option value="false">Disabled</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-2">BBPS Provider</label>
+                                <select id="bbps-provider" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white">
+                                    <option value="Setu">Setu</option>
+                                    <option value="BharatPe">BharatPe</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button onclick="saveBbpsSettings()" class="mt-4 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg">Save BBPS</button>
+                    </div>
+                </div>
             </div>
-            <div class="p-6 border-t border-white/10 flex gap-3 justify-end bg-black/20" id="refund-modal-actions">
-                <!-- Actions -->
+
+            <!-- TAB: Team & Admins -->
+            <div id="tab-team" class="tab-content">
+                <div class="glass-card rounded-xl p-6 border border-purple-500/20 mb-6">
+                    <h2 class="text-xl font-bold text-purple-400 mb-4">Create Admin</h2>
+                    <div class="flex gap-4 items-end">
+                        <div class="flex-1">
+                            <label class="block text-sm text-slate-400 mb-2">Email</label>
+                            <input type="email" id="admin-email" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm text-slate-400 mb-2">Password</label>
+                            <input type="password" id="admin-pass" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white">
+                        </div>
+                        <button onclick="createAdmin()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-lg">Create</button>
+                    </div>
+                </div>
+                
+                <div class="glass-card rounded-xl overflow-hidden border border-white/5">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-slate-400 text-sm">
+                            <tr><th class="p-4">Email</th><th class="p-4">Role</th><th class="p-4">Created At</th><th class="p-4">Action</th></tr>
+                        </thead>
+                        <tbody id="admins-table-body" class="divide-y divide-white/5"></tbody>
+                    </table>
+                </div>
             </div>
+
+            <!-- TAB: Reports -->
+            <div id="tab-reports" class="tab-content">
+                <div class="glass-card rounded-xl p-6 border border-purple-500/20 text-center py-20">
+                    <i data-lucide="file-spreadsheet" class="w-16 h-16 text-purple-400 mx-auto mb-4"></i>
+                    <h2 class="text-2xl font-bold text-white mb-2">Advanced Reporting Engine</h2>
+                    <p class="text-slate-400 mb-6">Export detailed CSV and PDF reports for accounting.</p>
+                    <button class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-lg" onclick="showSuperModal('Report generation is currently running in background. You will receive an email shortly.', 'Processing')">Generate Full Ledger Report</button>
+                </div>
+            </div>
+
+            <!-- TAB: Coupons -->
+            <div id="tab-coupons" class="tab-content">
+                <div class="glass-card rounded-xl p-6 border border-purple-500/20 mb-6">
+                    <h2 class="text-xl font-bold text-purple-400 mb-4">Create New Coupon</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1">Code</label>
+                            <input type="text" id="cpn-code" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white uppercase" placeholder="SUMMER50">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1">Discount (%)</label>
+                            <input type="number" id="cpn-val" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="10">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1">Max Cap (₹)</label>
+                            <input type="number" id="cpn-cap" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="50">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1">Usage Limit</label>
+                            <input type="number" id="cpn-limit" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white" value="100">
+                        </div>
+                    </div>
+                    <button onclick="createCoupon()" class="mt-4 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">Create Coupon</button>
+                </div>
+                
+                <div class="glass-card rounded-xl border border-white/5 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-slate-400 text-sm">
+                            <tr>
+                                <th class="p-4">Code</th>
+                                <th class="p-4">Discount</th>
+                                <th class="p-4">Max Cap</th>
+                                <th class="p-4">Usage Limit</th>
+                                <th class="p-4">Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coupons-table-body" class="divide-y divide-white/5 text-sm">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-500">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: Cashback -->
+            <div id="tab-cashback" class="tab-content">
+                <div class="glass-card rounded-xl p-6 border border-purple-500/20">
+                    <h2 class="text-xl font-bold text-purple-400 mb-6 flex items-center gap-2"><i data-lucide="coins"></i> Cashback Engine Rules</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-2">First Recharge Bonus (%)</label>
+                            <input type="number" id="cb-first" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white" value="5">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-2">Weekend Boost (%)</label>
+                            <input type="number" id="cb-weekend" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white" value="10">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-2">Jio Special Bonus (%)</label>
+                            <input type="number" id="cb-jio" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white" value="5">
+                        </div>
+                    </div>
+                    <button onclick="saveCashbackRules()" class="mt-6 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">Apply Cashback Rules</button>
+                </div>
+            </div>
+
+            <!-- TAB: Broadcasts -->
+            <div id="tab-marketing" class="tab-content">
+                <div class="glass-card rounded-xl p-6 border border-purple-500/20">
+                    <h2 class="text-xl font-bold text-purple-400 mb-2">Push Notifications & SMS</h2>
+                    <p class="text-slate-400 text-sm mb-6">Send manual broadcasts to all users.</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1">Target Audience</label>
+                            <select id="bc-audience" class="w-full bg-black/50 border border-white/20 rounded p-2 text-white max-w-md">
+                                <option value="all">All Active Users</option>
+                                <option value="inactive">Inactive Users (>30 Days)</option>
+                                <option value="platinum">Platinum Loyalty Users Only</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1">Message Content</label>
+                            <textarea id="bc-msg" class="w-full bg-black/50 border border-white/20 rounded p-3 text-white h-24" placeholder="Get 50% cashback today! Use code..."></textarea>
+                        </div>
+                        <button onclick="sendBroadcast()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-lg transition-colors flex items-center gap-2">
+                            <i data-lucide="send"></i> Send Broadcast
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Audit & Financials (Dashboard Overview) -->
+            <div id="tab-audit" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="glass-card rounded-xl p-6 border border-emerald-500/20">
+                        <h3 class="text-emerald-400 text-sm font-bold mb-1">Total System Profit</h3>
+                        <div class="text-3xl font-bold text-white" id="fin-profit">₹0.00</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-6 border border-amber-500/20">
+                        <h3 class="text-amber-400 text-sm font-bold mb-1">Admin Actions Taken</h3>
+                        <div class="text-3xl font-bold text-white" id="fin-actions">0</div>
+                    </div>
+                </div>
+                
+                <h2 class="text-xl font-bold text-purple-400 mb-4 mt-8">System Audit Logs</h2>
+                <div class="glass-card rounded-xl border border-white/5 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-slate-400 text-sm">
+                            <tr>
+                                <th class="p-4 w-48">Timestamp</th>
+                                <th class="p-4 w-48">Admin</th>
+                                <th class="p-4 w-48">Action</th>
+                                <th class="p-4">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-table-body" class="divide-y divide-white/5 text-sm">
+                            <tr><td colspan="4" class="p-4 text-center text-slate-500">Loading logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2 class="text-xl font-bold text-emerald-400 mb-4 mt-8">Recent Profit Logs</h2>
+                <div class="glass-card rounded-xl border border-white/5 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-slate-400 text-sm">
+                            <tr>
+                                <th class="p-4 w-48">Timestamp</th>
+                                <th class="p-4">Order ID</th>
+                                <th class="p-4">Amount</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-emerald-400">Profit Cut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profit-table-body" class="divide-y divide-white/5 text-sm">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-500">Loading profit logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
-    </div>
 
-    <!-- Vanilla JS Logic for existing features -->
+            <!-- TAB: Permissions -->
+            <div id="tab-permissions" class="tab-content">
+                <div class="glass-card rounded-xl p-6 border border-red-500/30">
+                    <h2 class="text-xl font-bold text-red-400 mb-2 flex items-center gap-2"><i data-lucide="shield"></i> Admin Hierarchy & Permissions</h2>
+                    <p class="text-sm text-slate-400 mb-8">Control exactly what the regular Admin is allowed to see and modify.</p>
+
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-white/5">
+                            <div>
+                                <h3 class="font-bold text-white">Process Refunds</h3>
+                                <p class="text-sm text-slate-400">Allow Admin to refund support tickets instantly.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="perm-refund" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-white/5">
+                            <div>
+                                <h3 class="font-bold text-white">Suspend Users</h3>
+                                <p class="text-sm text-slate-400">Allow Admin to ban/suspend fraudulent users.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="perm-suspend" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-white/5">
+                            <div>
+                                <h3 class="font-bold text-white">Modify Growth Rules</h3>
+                                <p class="text-sm text-slate-400">Allow Admin to edit Cashback and Referral amounts.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="perm-growth" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-white/5">
+                            <div>
+                                <h3 class="font-bold text-white">View Marketing Data</h3>
+                                <p class="text-sm text-slate-400">Allow Admin to view the Sales Leads and conversion funnel.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="perm-marketing" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-red-500/20">
+                            <div>
+                                <h3 class="font-bold text-white text-red-300">Allow Manual Recharge Override</h3>
+                                <p class="text-sm text-slate-400">DANGEROUS: Allow Admin to force a Failed transaction to Success without Provider verification.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="perm-override" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-end">
+                            <button onclick="savePermissions()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                                Enforce Permissions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
     <script>
-        // Init Lucide Icons
         lucide.createIcons();
 
-        // Global state for refunds
-        window.allRefunds = [];
-        window.currentRefundFilter = 'PENDING';
-
-
-        // Tab Switching Logic
+        // Tabs
         const tabs = document.querySelectorAll('.sidebar-item[data-tab]');
         const contents = document.querySelectorAll('.tab-content');
         const pageTitle = document.getElementById('page-title');
 
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                // Remove active class from all
                 tabs.forEach(t => t.classList.remove('active'));
                 contents.forEach(c => c.classList.remove('active'));
-                
-                // Add active to clicked
                 tab.classList.add('active');
-                const targetId = tab.getAttribute('data-tab');
-                document.getElementById(targetId).classList.add('active');
-                
-                // Update title
+                document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
                 pageTitle.innerText = tab.querySelector('span').innerText;
-
-                if (targetId === 'tab-fraud') {
-                    loadFraudData();
-                }
             });
         });
 
+        // Login
         document.getElementById('login-btn').addEventListener('click', () => {
-            const email = document.getElementById('admin-email').value;
-            const password = document.getElementById('admin-password').value;
-            fetch('/api/auth/login', {
+            const passcode = document.getElementById('super-passcode').value;
+            fetch('/api/superadmin/data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ passcode })
             })
-            .then(res => res.json())
-            .then(authData => {
-                if (authData.success) {
-                    sessionStorage.setItem('admin-token', authData.token);
-                    if (authData.role) {
-                        sessionStorage.setItem('admin-role', authData.role);
-                    }
-                    
-                    // Now fetch data
-                    fetch('/api/admin/data', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + authData.token
-                        },
-                        body: JSON.stringify({})
-                    })
-                    .then(r => r.json())
-                    .then(data => {
-                        if(data.success) {
-                            document.getElementById('login-overlay').classList.add('hidden');
-                            document.getElementById('dashboard-content').classList.remove('hidden');
-                            renderDashboard(data);
-                            window.dispatchEvent(new Event('admin-unlocked'));
-                        } else {
-                            document.getElementById('login-error').innerText = data.error || "Access Denied";
-                            document.getElementById('login-error').classList.remove('hidden');
-                        }
-                    });
+            .then(r => r.json())
+            .then(data => {
+                if(data.success) {
+                    sessionStorage.setItem('super-passcode', passcode);
+                    document.getElementById('login-overlay').classList.add('hidden');
+                    document.getElementById('sidebar').classList.remove('hidden');
+                    document.getElementById('main-content').classList.remove('hidden');
+                    renderData(data);
                 } else {
-                    document.getElementById('login-error').innerText = "Invalid Credentials";
                     document.getElementById('login-error').classList.remove('hidden');
                 }
             })
-            .catch(err => {
+            .catch(() => {
                 document.getElementById('login-error').innerText = "Network Error";
                 document.getElementById('login-error').classList.remove('hidden');
             });
         });
-
+        
         document.getElementById('logout-btn').addEventListener('click', () => {
-            sessionStorage.removeItem('admin-token');
-            document.getElementById('admin-email').value = '';
-            document.getElementById('admin-password').value = '';
-            document.getElementById('dashboard-content').classList.add('hidden');
-            document.getElementById('login-overlay').classList.remove('hidden');
+            sessionStorage.removeItem('super-passcode');
+            location.reload();
         });
 
-        // USER MANAGEMENT LOGIC
-        window.globalData = null;
-
-        function openUserModal(phone) {
-            if (!window.globalData || !window.globalData.users) return;
-            const user = window.globalData.users.find(u => (u.phone_number || u.mobile) === phone);
-            if (!user) return;
-
-            const userPhone = user.phone_number || user.mobile || 'Unknown';
-            document.getElementById('um-phone').innerText = userPhone;
-            document.getElementById('um-joined').innerText = 'Joined: ' + (user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A');
-            document.getElementById('um-wallet').innerText = '₹' + (user.wallet_balance || 0).toFixed(2);
-            document.getElementById('um-loyalty').innerText = user.loyalty_tier || 'Silver';
+        function renderData(data) {
+            // Config
+            if(data.api_provider) {
+                document.getElementById('prov-gateway').value = data.api_provider.provider;
+                document.getElementById('prov-margin').value = data.api_provider.commission_margin;
+            }
+            if(data.cashback_rules) {
+                document.getElementById('cb-first').value = data.cashback_rules.first_recharge || 0;
+                document.getElementById('cb-weekend').value = data.cashback_rules.weekend || 0;
+                document.getElementById('cb-jio').value = (data.cashback_rules.operator_specific && data.cashback_rules.operator_specific.Jio) || 0;
+            }
             
-            const status = user.status || (user.suspended ? 'SUSPENDED' : 'ACTIVE');
-            document.getElementById('um-status').innerText = status;
+            // Financials
+            document.getElementById('fin-profit').innerText = `₹${data.total_profit.toFixed(2)}`;
+            document.getElementById('fin-actions').innerText = data.audit_logs.length;
             
-            const isSuspended = status === 'SUSPENDED';
-            if (isSuspended) {
-                document.getElementById('um-status').className = 'text-2xl font-bold text-rose-500';
-            } else {
-                document.getElementById('um-status').className = 'text-2xl font-bold text-emerald-400';
+            // Coupons
+            const cbody = document.getElementById('coupons-table-body');
+            cbody.innerHTML = '';
+            data.promo_codes.forEach(c => {
+                cbody.innerHTML += `<tr>
+                    <td class="p-4 font-mono text-purple-400">${c.code}</td>
+                    <td class="p-4">${c.value}%</td>
+                    <td class="p-4">₹${c.max_cap}</td>
+                    <td class="p-4">${c.usage_limit}</td>
+                    <td class="p-4 text-slate-400">${c.created_at}</td>
+                </tr>`;
+            });
+            if(data.promo_codes.length === 0) cbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">No coupons exist.</td></tr>';
+            
+            // Audit Logs
+            const abody = document.getElementById('audit-table-body');
+            abody.innerHTML = '';
+            data.audit_logs.forEach(a => {
+                abody.innerHTML += `<tr>
+                    <td class="p-4 text-slate-400 text-xs">${a.created_at}</td>
+                    <td class="p-4 text-amber-400">${a.admin_email || 'System'}</td>
+                    <td class="p-4 font-bold text-white">${a.action}</td>
+                    <td class="p-4 text-slate-400">${a.details}</td>
+                </tr>`;
+            });
+            if(data.audit_logs.length === 0) abody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No logs found.</td></tr>';
+
+            // Profit Logs
+            if (data.recent_transactions) {
+                const pbody = document.getElementById('profit-table-body');
+                pbody.innerHTML = '';
+                data.recent_transactions.forEach(t => {
+                    let orderIcon = '';
+                    if (t.order_id.startsWith('MOB_')) orderIcon = '📱 ';
+                    else if (t.order_id.startsWith('OTT_')) orderIcon = '🍿 ';
+                    else if (t.order_id.startsWith('UTL_')) orderIcon = '💡 ';
+                    else if (t.order_id.startsWith('WALLET_')) orderIcon = '💳 ';
+                    else if (t.order_id.startsWith('AUTO-')) orderIcon = '🤖 ';
+                    else if (t.order_id.startsWith('FAM-')) orderIcon = '👨‍👩‍👧 ';
+
+                    pbody.innerHTML += `<tr>
+                        <td class="p-4 text-slate-400 text-xs">${t.created_at}</td>
+                        <td class="p-4 font-mono text-white"><span class="mr-1">${orderIcon}</span>${t.order_id}</td>
+                        <td class="p-4">₹${t.amount.toFixed(2)}</td>
+                        <td class="p-4">${t.status}</td>
+                        <td class="p-4 font-bold text-emerald-400">+₹${t.profit.toFixed(2)}</td>
+                    </tr>`;
+                });
+                if(data.recent_transactions.length === 0) pbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">No transactions found.</td></tr>';
+            }
+            
+            // Permissions
+            if (data.admin_permissions) {
+                document.getElementById('perm-refund').checked = data.admin_permissions.can_refund;
+                document.getElementById('perm-suspend').checked = data.admin_permissions.can_suspend_users;
+                document.getElementById('perm-growth').checked = data.admin_permissions.can_edit_growth;
+                document.getElementById('perm-marketing').checked = data.admin_permissions.can_view_marketing;
+                document.getElementById('perm-override').checked = data.admin_permissions.can_override_recharge || false;
             }
 
-            // Render Actions
-            const actionsDiv = document.getElementById('um-actions');
-            const role = sessionStorage.getItem('admin-role');
-            if (role === 'superadmin' || role === 'super_admin') {
-                actionsDiv.innerHTML = `
-                    <button onclick="resetUser('${userPhone}')" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition flex items-center gap-2">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reset Binding
-                    </button>
-                    ${isSuspended ? 
-                    `<button onclick="userAction('${userPhone}', 'activate')" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
-                        <i data-lucide="check-circle" class="w-4 h-4"></i> Activate
-                    </button>` : 
-                    `<button onclick="userAction('${userPhone}', 'suspend')" class="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/50 rounded-lg text-sm font-bold transition flex items-center gap-2">
-                        <i data-lucide="ban" class="w-4 h-4"></i> Suspend
-                    </button>`}
-                `;
-            } else {
-                actionsDiv.innerHTML = `
-                    <div class="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-slate-400 flex items-center gap-2">
-                        <i data-lucide="lock" class="w-4 h-4"></i> Read Only (Super Admin Required)
-                    </div>
-                `;
+            // Wallets
+            if(data.users) {
+                const wbody = document.getElementById('wallets-table-body');
+                wbody.innerHTML = '';
+                data.users.forEach(u => {
+                    wbody.innerHTML += `<tr>
+                        <td class="p-4 font-mono text-emerald-400">${u.phone}</td>
+                        <td class="p-4">₹${u.wallet_balance.toFixed(2)}</td>
+                        <td class="p-4 text-slate-400">${u.created_at}</td>
+                        <td class="p-4">
+                            <button onclick="adjustWallet('${u.phone}')" class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/40 border border-emerald-500/50 px-3 py-1 rounded text-xs font-bold transition">Adjust</button>
+                        </td>
+                    </tr>`;
+                });
+                if(data.users.length === 0) wbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No users found.</td></tr>';
             }
 
-            // Render Logins
-            const loginsBody = document.getElementById('um-logins-body');
-            loginsBody.innerHTML = '';
-            const userLogins = (window.globalData.logins || []).filter(l => l.user_phone === phone);
-            if (userLogins.length === 0) {
-                loginsBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-500 italic">No login history</td></tr>';
-            } else {
-                userLogins.forEach(l => {
-                    loginsBody.innerHTML += `
-                        <tr class="hover:bg-white/5 transition">
-                            <td class="p-3 whitespace-nowrap">${new Date(l.created_at).toLocaleString()}</td>
-                            <td class="p-3">${l.ip_address || 'Unknown'}<br><span class="text-xs text-slate-500">${l.location || ''}</span></td>
-                            <td class="p-3 text-xs text-slate-400 truncate max-w-[150px]" title="${l.device_info}">${l.device_info || 'Unknown Device'}</td>
-                        </tr>
-                    `;
+            // Admins
+            if(data.admins) {
+                const tbody = document.getElementById('admins-table-body');
+                tbody.innerHTML = '';
+                data.admins.forEach(a => {
+                    tbody.innerHTML += `<tr>
+                        <td class="p-4 text-white font-bold">${a.email}</td>
+                        <td class="p-4">
+                            <span class="px-2 py-1 rounded text-xs font-bold ${a.role === 'superadmin' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50' : 'bg-blue-500/20 text-blue-400 border border-blue-500/50'}">${a.role}</span>
+                        </td>
+                        <td class="p-4 text-slate-400">${a.created_at}</td>
+                        <td class="p-4">
+                            ${a.role !== 'superadmin' ? `<button onclick="deleteAdmin('${a.email}')" class="text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded text-xs transition border border-red-500/30">Revoke</button>` : ''}
+                        </td>
+                    </tr>`;
                 });
             }
 
-            // Render Fraud Alerts
-            const fraudBody = document.getElementById('um-fraud-body');
-            fraudBody.innerHTML = '';
-            const userFraud = (window.globalData.fraud_alerts || []).filter(f => f.user_phone === phone);
-            if (userFraud.length === 0) {
-                fraudBody.innerHTML = '<p class="text-slate-500 italic text-center py-8">No suspicious activity detected.</p>';
-            } else {
-                userFraud.forEach(f => {
-                    fraudBody.innerHTML += `
-                        <div class="mb-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
-                            <div class="flex justify-between items-start mb-1">
-                                <span class="font-bold text-rose-400 text-sm">${f.alert_type}</span>
-                                <span class="text-xs text-slate-500">${new Date(f.created_at).toLocaleString()}</span>
-                            </div>
-                            <p class="text-sm text-slate-300">${f.description}</p>
-                        </div>
-                    `;
-                });
+            // Gateway & BBPS Settings
+            if(data.gateway_keys) {
+                document.getElementById('cf-client-id').value = data.gateway_keys.cashfree_client_id || "";
+                document.getElementById('cf-secret').value = data.gateway_keys.cashfree_secret || "";
             }
-
-            lucide.createIcons();
-            document.getElementById('user-details-modal').classList.remove('hidden');
+            if(data.bbps_settings) {
+                document.getElementById('bbps-enabled').value = data.bbps_settings.enabled ? "true" : "false";
+                document.getElementById('bbps-provider').value = data.bbps_settings.provider || "Setu";
+            }
         }
 
-        function closeUserModal() {
-            document.getElementById('user-details-modal').classList.add('hidden');
-        }
-
-        async function userAction(phone, action) {
-            const confirmed = await adminConfirm(`Are you sure you want to ${action} user ${phone}?`);
-            if (!confirmed) return;
-            const token = sessionStorage.getItem('admin-token');
-            fetch('/api/admin/users/action', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ phone_number: phone, action: action })
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    showToast(`User ${action} successful!`);
-                    closeUserModal();
-                    // Refresh data
-                    document.getElementById('refresh-btn').click();
-                } else {
-                    showToast(res.error || `Failed to ${action} user`, 'error');
+        window.savePermissions = function() {
+            const payload = {
+                passcode: sessionStorage.getItem('super-passcode'),
+                action: 'update_permissions',
+                permissions: {
+                    can_refund: document.getElementById('perm-refund').checked,
+                    can_suspend_users: document.getElementById('perm-suspend').checked,
+                    can_edit_growth: document.getElementById('perm-growth').checked,
+                    can_view_marketing: document.getElementById('perm-marketing').checked,
+                    can_override_recharge: document.getElementById('perm-override').checked
                 }
-            });
-        }
-
-        async function resetUser(phone) {
-            const confirmed = await adminConfirm(`Resetting binding for ${phone} will clear their device_id and allow login from a new device. Continue?`);
-            if (!confirmed) return;
-            const token = sessionStorage.getItem('admin-token');
-            fetch('/api/admin/users/action', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ phone_number: phone, action: 'reset' })
-            })
+            };
+            fetch('/api/superadmin/action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
             .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    showToast(`Security binding reset for ${phone}!`);
-                    closeUserModal();
-                } else {
-                    showToast(res.error || 'Failed to reset user', 'error');
+            .then(d => { if(d.success) showSuperModal("Permissions Enforced Successfully!", "Success"); else showSuperModal("Error", "Error"); })
+            .catch(() => showSuperModal("Network Error", "Error"));
+        }
+
+        // Actions
+        window.saveProvider = function() {
+            const payload = {
+                passcode: sessionStorage.getItem('super-passcode'),
+                action: 'update_provider',
+                provider: document.getElementById('prov-gateway').value,
+                margin: parseFloat(document.getElementById('prov-margin').value)
+            };
+            fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+            .then(r=>r.json()).then(d => { if(d.success) showSuperModal('Saved!', 'Success'); else showSuperModal(d.error, 'Error'); });
+        };
+
+        window.saveCashbackRules = function() {
+            const rules = {
+                first_recharge: parseFloat(document.getElementById('cb-first').value),
+                weekend: parseFloat(document.getElementById('cb-weekend').value),
+                operator_specific: {
+                    Jio: parseFloat(document.getElementById('cb-jio').value)
                 }
-            });
-        }
-
-        function openRechargeModal(orderId) {
-            const tx = window.globalData.transactions.find(t => t.order_id === orderId);
-            if(!tx) return;
-            
-            document.getElementById('rm-orderid').innerText = tx.order_id;
-            document.getElementById('rm-date').innerText = `Date: ${new Date(tx.created_at).toLocaleString()}`;
-            document.getElementById('rm-user').innerText = tx.phone_number || 'Unknown';
-            document.getElementById('rm-amount').innerText = `₹${parseFloat(tx.amount).toFixed(2)}`;
-            document.getElementById('rm-status').innerText = tx.status;
-            
-            let operator = "Unknown";
-            if(tx.order_id.includes('JIO')) operator = 'Jio';
-            if(tx.order_id.includes('AIRTEL')) operator = 'Airtel';
-            if(tx.order_id.includes('VI')) operator = 'VI';
-            if(tx.order_id.includes('BSNL')) operator = 'BSNL';
-            document.getElementById('rm-operator').innerText = operator;
-            
-            const actionContainer = document.getElementById('rm-actions');
-            actionContainer.innerHTML = '';
-            
-            // Requery is always available unless success
-            if (tx.status.toUpperCase() !== 'SUCCESS') {
-                actionContainer.innerHTML += `<button onclick="rechargeAction('${tx.order_id}', 'requery')" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold shadow-lg shadow-blue-500/20 transition flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Requery Status</button>`;
-            }
-            
-            // Retry for failed/pending
-            if (tx.status.toUpperCase() !== 'SUCCESS') {
-                actionContainer.innerHTML += `<button onclick="rechargeAction('${tx.order_id}', 'retry')" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold shadow-lg shadow-amber-500/20 transition flex items-center gap-2"><i data-lucide="repeat" class="w-4 h-4"></i> Retry API Call</button>`;
-            }
-            
-            // Force status if permitted
-            if (window.globalData.admin_permissions && window.globalData.admin_permissions.can_override_recharge) {
-                actionContainer.innerHTML += `
-                    <div class="w-full h-px bg-white/10 my-2"></div>
-                    <button onclick="rechargeAction('${tx.order_id}', 'force_status', 'SUCCESS')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 border border-emerald-400/50"><i data-lucide="shield-alert" class="w-4 h-4"></i> Force Success</button>
-                    <button onclick="rechargeAction('${tx.order_id}', 'force_status', 'FAILED')" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold shadow-lg shadow-rose-500/20 transition flex items-center gap-2 border border-rose-400/50"><i data-lucide="shield-alert" class="w-4 h-4"></i> Force Failed</button>
-                `;
-            }
-            
-            if(actionContainer.innerHTML === '') {
-                actionContainer.innerHTML = '<span class="text-slate-500 italic">No actions available.</span>';
-            }
-            
-            lucide.createIcons();
-            document.getElementById('recharge-details-modal').classList.remove('hidden');
-        }
-
-        function closeRechargeModal() {
-            document.getElementById('recharge-details-modal').classList.add('hidden');
-        }
-
-        async function rechargeAction(orderId, action, forcedStatus = null) {
-            let msg = `Are you sure you want to ${action} this transaction?`;
-            if(action === 'force_status') msg = `DANGER: Are you sure you want to force status to ${forcedStatus} without API validation?`;
-            
-            const confirmed = await adminConfirm(msg);
-            if(!confirmed) return;
-            
-            const token = sessionStorage.getItem('admin-token');
-            const payload = { action: action, order_id: orderId };
-            if (forcedStatus) payload.status = forcedStatus;
-            
-            fetch('/api/admin/recharge/action', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify(payload)
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    showToast(`Action ${action} successful! New status: ${res.new_status || forcedStatus || 'Updated'}`);
-                    closeRechargeModal();
-                    document.getElementById('refresh-btn').click();
-                } else {
-                    showToast(res.error || 'Action failed', 'error');
-                }
-            });
-        }
-
-        function renderUsers(data) {
-            const tbody = document.getElementById('users-table-body');
-            tbody.innerHTML = '';
-            if (!data.users || data.users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500">No users found.</td></tr>';
+            };
+            const payload = {
+                passcode: sessionStorage.getItem('super-passcode'),
+                action: 'update_cashback_rules',
+                rules: rules
+            };
+            fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+            .then(r=>r.json()).then(d => { if(d.success) showSuperModal('Cashback Rules Updated!', 'Success'); else showSuperModal(d.error, 'Error'); });
+        };
+        
+        window.createCoupon = function() {
+            const codeInput = document.getElementById('cpn-code').value.trim();
+            if(!codeInput) {
+                showSuperModal('Please enter a valid coupon code (e.g. SUMMER50)', 'Validation Error');
                 return;
             }
-            data.users.forEach(u => {
-                const phone = u.phone_number || u.mobile || 'Unknown';
-                const status = u.status || (u.suspended ? 'SUSPENDED' : 'ACTIVE');
-                const isSuspended = status === 'SUSPENDED';
-                const statusBadge = isSuspended ? 
-                    '<span class="px-2 py-1 bg-rose-500/20 text-rose-400 text-xs rounded-full border border-rose-500/30">Suspended</span>' : 
-                    '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30">Active</span>';
-                
-                const createdAt = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A';
-                
-                tbody.innerHTML += `
-                    <tr class="hover:bg-white/5 transition border-b border-white/5 last:border-0">
-                        <td class="p-4 font-medium flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary"><i data-lucide="user" class="w-4 h-4"></i></div>
-                            ${phone}
-                        </td>
-                        <td class="p-4">${statusBadge}</td>
-                        <td class="p-4 text-sm text-slate-400">${createdAt}</td>
-                        <td class="p-4">
-                            <button onclick="openUserModal('${phone}')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition">
-                                Manage
-                            </button>
-                        </td>
-                    </tr>
-                `;
+            const payload = {
+                passcode: sessionStorage.getItem('super-passcode'),
+                action: 'create_coupon',
+                code: codeInput.toUpperCase(),
+                value: parseFloat(document.getElementById('cpn-val').value),
+                max_cap: parseFloat(document.getElementById('cpn-cap').value),
+                usage_limit: parseInt(document.getElementById('cpn-limit').value)
+            };
+            fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+            .then(r=>r.json()).then(d => { 
+                if(d.success) {
+                    showSuperModal('Coupon Created!', 'Success');
+                    document.getElementById('login-btn').click(); // Refresh data
+                } else {
+                    showSuperModal(d.error, 'Error');
+                }
             });
-            lucide.createIcons();
-        }
-
-        function renderDashboard(data) {
-            window.globalData = data;
-            if (data.assistant_name) {
-                document.getElementById('admin-assistant-name').value = data.assistant_name;
-            }
-            let totalRevenue = 0;
-            let totalRefunded = 0;
-            let successCount = 0;
-            const txBody = document.getElementById('tx-table-body');
-            txBody.innerHTML = '';
-
-            data.transactions.forEach(tx => {
-                if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') {
-                    totalRevenue += tx.amount;
-                    successCount++;
-                } else if (tx.status.toLowerCase() === 'refunded') {
-                    totalRefunded += tx.amount;
-                }
-                
-                let statusClass = 'pending';
-                if (tx.status.toLowerCase() === 'success' || tx.status.toLowerCase() === 'paid') statusClass = 'success';
-                else if (tx.status.toLowerCase() === 'failed') statusClass = 'failed';
-                else if (tx.status.toLowerCase() === 'refunded') statusClass = 'failed'; // reuse failed class for red
-
-                let orderIcon = '';
-                if (tx.order_id.startsWith('MOB_')) orderIcon = '📱 ';
-                else if (tx.order_id.startsWith('OTT_')) orderIcon = '🍿 ';
-                else if (tx.order_id.startsWith('UTL_')) orderIcon = '💡 ';
-                else if (tx.order_id.startsWith('WALLET_')) orderIcon = '💳 ';
-                else if (tx.order_id.startsWith('AUTO-')) orderIcon = '🤖 ';
-                else if (tx.order_id.startsWith('FAM-')) orderIcon = '👨‍👩‍👧 ';
-
-                txBody.innerHTML += `
-                    <tr class="hover:bg-white/5 transition whitespace-nowrap">
-                        <td class="p-4 text-slate-300 text-xs font-mono"><span class="mr-1">${orderIcon}</span>${tx.order_id}</td>
-                        <td class="p-4 font-medium">${tx.user_identifier}</td>
-                        <td class="p-4 font-bold text-primary">₹${tx.amount.toFixed(2)}</td>
-                        <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${statusClass === 'success' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : statusClass === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' : 'bg-red-500/20 text-red-400 border border-red-500/50'}">${tx.status.toUpperCase()}</span></td>
-                        <td class="p-4 text-slate-400 text-sm">${new Date(tx.created_at).toLocaleString()}</td>
-                    </tr>
-                `;
+        };
+        
+        window.sendBroadcast = function() {
+            const payload = {
+                passcode: sessionStorage.getItem('super-passcode'),
+                action: 'broadcast',
+                audience: document.getElementById('bc-audience').value,
+                message: document.getElementById('bc-msg').value
+            };
+            fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+            .then(r=>r.json()).then(d => { 
+                if(d.success) showSuperModal('Broadcast Sent to ' + d.count + ' users!', 'Success'); 
+                else showSuperModal(d.error, 'Error'); 
             });
+        };
 
-            document.getElementById('metric-revenue').innerText = '₹' + totalRevenue.toLocaleString();
-            document.getElementById('metric-refunded').innerText = '₹' + totalRefunded.toLocaleString();
-            document.getElementById('metric-tx-count').innerText = successCount;
-            const purchaseData = data.purchases || data.transactions || [];
-            document.getElementById('metric-plans-count').innerText = purchaseData.length;
-
-            if (data.analytics) {
-                document.getElementById('funnel-visits').innerText = data.analytics.page_view || 0;
-                document.getElementById('funnel-entered').innerText = data.analytics.entered_number || 0;
-                document.getElementById('funnel-logged').innerText = data.analytics.logged_in || 0;
-                document.getElementById('funnel-checkout').innerText = data.analytics.checkout_started || 0;
-                document.getElementById('funnel-purchased').innerText = data.analytics.purchase_success || successCount;
-            }
-
-            const pBody = document.getElementById('purchases-table-body');
-            if (pBody) {
-                pBody.innerHTML = '';
-                purchaseData.forEach(p => {
-                    pBody.innerHTML += `
-                    <tr class="hover:bg-white/5 transition whitespace-nowrap">
-                        <td class="p-4 font-semibold">${p.target || '-'}</td>
-                        <td class="p-4 text-slate-300">${p.brand || '-'}</td>
-                        <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold bg-white/10 text-white border border-white/20">${(p.status || 'UNKNOWN').toUpperCase()}</span></td>
-                        <td class="p-4 text-slate-400 text-sm">${p.date ? new Date(p.date).toLocaleString() : '-'}</td>
-                    </tr>
-                `;
-                });
-            }
-
-            if (data.analytics && data.analytics.leads) {
-                const leadsBody = document.getElementById('leads-table-body');
-                leadsBody.innerHTML = '';
-                if (data.analytics.leads.length === 0) {
-                    leadsBody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500">No leads captured yet.</td></tr>';
-                } else {
-                    data.analytics.leads.forEach(lead => {
-                        let stageClass = 'text-slate-400';
-                        if (lead.stage === 'Purchased') stageClass = 'text-green-400 font-bold';
-                        else if (lead.stage === 'Started Checkout') stageClass = 'text-accent';
-                        else if (lead.stage === 'Verified OTP') stageClass = 'text-yellow-400';
-                        
-                        leadsBody.innerHTML += `
-                            <tr class="hover:bg-white/5 transition">
-                                <td class="font-bold text-white">
-                                    ${lead.contact || 'No Phone'}
-                                    ${lead.email ? `<br><span class="text-xs text-slate-400 font-normal mt-1 block"><i data-lucide="mail" class="w-3 h-3 inline"></i> ${lead.email}</span>` : ''}
-                                </td>
-                                <td class="${stageClass}">${lead.stage}</td>
-                                <td class="text-slate-400 text-sm">${new Date(lead.last_active).toLocaleString()}</td>
-                                <td>
-                                    ${lead.contact ? `<a href="https://wa.me/${lead.contact.replace('+','')}" target="_blank" class="px-3 py-1 bg-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/30 border border-[#25D366]/50 rounded text-xs font-bold transition flex items-center gap-1 w-max mb-1">
-                                        <i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp
-                                    </a>` : ''}
-                                    ${lead.email ? `<a href="mailto:${lead.email}" target="_blank" class="px-3 py-1 bg-[#00BFFF]/20 text-[#00BFFF] hover:bg-[#00BFFF]/30 border border-[#00BFFF]/50 rounded text-xs font-bold transition flex items-center gap-1 w-max">
-                                        <i data-lucide="mail" class="w-3 h-3"></i> Email
-                                    </a>` : ''}
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    lucide.createIcons();
+        window.saveGatewayKeys = function() {
+            const payload = {
+                passcode: sessionStorage.getItem('super-passcode'),
+                action: 'update_gateway_keys',
+                keys: {
+                    cashfree_client_id: document.getElementById('cf-client-id').value,
+                    cashfree_secret: document.getElementById('cf-secret').value
                 }
-            }
+            };
+            fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+            .then(r=>r.json()).then(d => { 
+                if(d.success) showSuperModal('Gateway Keys Saved!', 'Success'); 
+                else showSuperModal(d.error, 'Error'); 
+            });
+        };
 
-            if (data.marketing_data) {
-                const plansUl = document.getElementById('marketing-popular-plans');
-                plansUl.innerHTML = '';
-                if (data.marketing_data.top_operators && data.marketing_data.top_operators.length > 0) {
-                    data.marketing_data.top_operators.forEach(op => {
-                        plansUl.innerHTML += `<li class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/10">
-                            <span class="font-bold text-white">${op.operator_brand || 'Unknown'} Plans</span>
-                            <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded font-bold">${op.count} Recharges</span>
-                        </li>`;
-                    });
-                } else {
-                    plansUl.innerHTML = '<li class="text-slate-500 italic text-sm">No plan data yet.</li>';
+        window.saveBbpsSettings = function() {
+            const payload = {
+                passcode: sessionStorage.getItem('super-passcode'),
+                action: 'update_bbps_settings',
+                settings: {
+                    enabled: document.getElementById('bbps-enabled').value === 'true',
+                    provider: document.getElementById('bbps-provider').value
                 }
+            };
+            fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+            .then(r=>r.json()).then(d => { 
+                if(d.success) showSuperModal('BBPS Settings Saved!', 'Success'); 
+                else showSuperModal(d.error, 'Error'); 
+            });
+        };
 
-                const amountsDiv = document.getElementById('marketing-top-amounts');
-                amountsDiv.innerHTML = '';
-                if (data.marketing_data.top_amounts && data.marketing_data.top_amounts.length > 0) {
-                    data.marketing_data.top_amounts.forEach(amt => {
-                        amountsDiv.innerHTML += `<span class="px-4 py-2 bg-gradient-to-r from-primary to-accent rounded-lg text-sm font-bold text-white shadow-lg border border-white/20">₹${amt.amount} <span class="opacity-75 text-xs ml-1">(${amt.count}x)</span></span>`;
-                    });
-                } else {
-                    amountsDiv.innerHTML = '<span class="text-slate-500 italic text-sm">No amount data yet.</span>';
+        window.createAdmin = function() {
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-pass').value;
+
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return showSuperModal('Please enter a valid email address.', 'Validation Error');
+            }
+
+            // Strict Password validation (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!passwordRegex.test(password)) {
+                return showSuperModal('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.', 'Weak Password');
+            }
+
+            const payload = {
+                passcode: sessionStorage.getItem('super-passcode'),
+                action: 'create_admin',
+                email: email,
+                password: password
+            };
+            fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+            .then(r=>r.json()).then(d => { 
+                if(d.success) {
+                    showSuperModal('Admin Created/Updated!', 'Success'); 
+                    document.getElementById('login-btn').click();
                 }
-            }
+                else showSuperModal(d.error, 'Error'); 
+            });
+        };
 
-            renderUsers(data);
-            renderRecharges(data);
-        }
-
-        function toggleRechargeFilter() {
-            const dropdown = document.getElementById('custom-recharge-dropdown');
-            dropdown.classList.toggle('hidden');
-        }
-
-        function setRechargeFilter(val, label) {
-            document.getElementById('recharge-filter').value = val;
-            document.getElementById('custom-recharge-filter-text').innerText = label;
-            document.getElementById('custom-recharge-dropdown').classList.add('hidden');
-            renderRecharges(window.globalData);
-        }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const container = document.getElementById('custom-recharge-filter-container');
-            if (container && !container.contains(event.target)) {
-                document.getElementById('custom-recharge-dropdown').classList.add('hidden');
-            }
-        });
-
-        function renderRecharges(data) {
-            if (!data || !data.transactions) return;
-            const filter = document.getElementById('recharge-filter').value;
-            const tbody = document.getElementById('recharges-table-body');
-            tbody.innerHTML = '';
+        function showSuperConfirm(message, title, onConfirm) {
+            const modal = document.getElementById('super-confirm-modal');
+            const content = document.getElementById('super-confirm-modal-content');
+            document.getElementById('super-confirm-title').textContent = title;
+            document.getElementById('super-confirm-message').textContent = message;
             
-            // Render Analytics
-            const analyticsContainer = document.getElementById('operator-analytics-container');
-            if (analyticsContainer && data.business_metrics && data.business_metrics.operator_analytics) {
-                analyticsContainer.innerHTML = '';
-                data.business_metrics.operator_analytics.forEach(op => {
-                    analyticsContainer.innerHTML += `
-                        <div class="bg-black/40 p-4 rounded-xl border border-white/5 relative overflow-hidden">
-                            <p class="text-sm text-slate-400 mb-1">${op.operator}</p>
-                            <p class="text-2xl font-bold text-white">${op.success_rate}% <span class="text-xs text-slate-500 ml-1 font-normal">Success</span></p>
-                            <p class="text-xs text-red-400 mt-1">${op.failed} Failed Txns</p>
-                            <div class="absolute bottom-0 left-0 h-1 bg-white/10 w-full"><div class="h-full ${op.success_rate > 95 ? 'bg-emerald-500' : (op.success_rate > 85 ? 'bg-amber-500' : 'bg-red-500')}" style="width: ${op.success_rate}%"></div></div>
-                        </div>
-                    `;
-                });
-            }
-
-            const txns = data.transactions.filter(tx => {
-                if(filter === 'ALL') return true;
-                return tx.status.toUpperCase() === filter;
+            const confirmBtn = document.getElementById('super-confirm-btn');
+            const newBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+            
+            newBtn.addEventListener('click', () => {
+                closeSuperConfirm();
+                onConfirm();
             });
             
-            txns.forEach(tx => {
-                let statusBadge = '';
-                const st = tx.status.toUpperCase();
-                if(st === 'SUCCESS' || st === 'PAID') statusBadge = '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/30">SUCCESS</span>';
-                else if(st === 'FAILED' || st === 'REFUNDED') statusBadge = '<span class="px-2 py-1 bg-rose-500/20 text-rose-400 text-xs rounded-full border border-rose-500/30">FAILED</span>';
-                else statusBadge = '<span class="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full border border-amber-500/30">PENDING</span>';
-                
-                // Try to infer Operator from Order ID or Plan
-                let operator = "Unknown";
-                if(tx.order_id.includes('JIO')) operator = 'Jio';
-                if(tx.order_id.includes('AIRTEL')) operator = 'Airtel';
-                if(tx.order_id.includes('VI')) operator = 'VI';
-                if(tx.order_id.includes('BSNL')) operator = 'BSNL';
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-white/5 transition border-b border-white/5 last:border-0">
-                        <td class="p-4 font-mono text-xs text-white">${tx.order_id}</td>
-                        <td class="p-4 font-medium">${tx.phone_number || 'Unknown'}</td>
-                        <td class="p-4 font-bold text-emerald-400">₹${parseFloat(tx.amount).toFixed(2)}</td>
-                        <td class="p-4">${statusBadge}</td>
-                        <td class="p-4 text-xs text-slate-400">${new Date(tx.created_at).toLocaleString()}</td>
-                        <td class="p-4 text-right">
-                            <button onclick="openRechargeModal('${tx.order_id}')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition">
-                                Manage
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            if(txns.length === 0) tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">No recharges found for this filter.</td></tr>';
+            modal.classList.remove('hidden');
+            void modal.offsetWidth;
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+            
             lucide.createIcons();
         }
-        function showToast(message, type = 'success') {
-            let container = document.getElementById('toast-container');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'toast-container';
-                container.style.cssText = 'position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none;';
-                document.body.appendChild(container);
-            }
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                padding: 1rem 1.5rem; border-radius: 8px; display: flex; align-items: center; gap: 12px;
-                backdrop-filter: blur(12px); color: white;
-                border: 1px solid ${type === 'error' ? 'rgba(239,68,68,0.5)' : 'rgba(34,197,94,0.5)'};
-                background: ${type === 'error' ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'};
-                box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); transform: translateX(120%); transition: transform 0.3s ease;
-                pointer-events: auto;
-            `;
-            const icon = type === 'error' ? '⚠️' : '✅';
-            toast.innerHTML = `<div>${icon}</div><div>${message}</div>`;
-            container.appendChild(toast);
-            requestAnimationFrame(() => toast.style.transform = 'translateX(0)');
+        
+        function closeSuperConfirm() {
+            const modal = document.getElementById('super-confirm-modal');
+            const content = document.getElementById('super-confirm-modal-content');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
             setTimeout(() => {
-                toast.style.transform = 'translateX(120%)';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+                modal.classList.add('hidden');
+            }, 200);
         }
 
-
-        document.getElementById('save-assistant-name').addEventListener('click', () => {
-            const newName = document.getElementById('admin-assistant-name').value.trim();
-            if (!newName) return;
-
-            const token = sessionStorage.getItem('admin-token');
-            fetch('/api/admin/config', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
-                body: JSON.stringify({ assistant_name: newName })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    const msg = document.getElementById('save-settings-msg');
-                    msg.classList.remove('hidden');
-                    setTimeout(() => msg.classList.add('hidden'), 3000);
-                } else {
-                    showToast('Error saving name: ' + data.error, 'error');
-                }
-            })
-            .catch(err => console.error(err));
-        });
-
-        // ==========================================
-        // CASHFREE PAYMENT & RECONCILIATION MODULE
-        // ==========================================
-
-        window.addEventListener('admin-unlocked', () => {
-            fetchPaymentsData();
-            fetchRefundsData();
-            fetchSettlementsData();
-        });
-
-        function fetchPaymentsData() {
-            const token = sessionStorage.getItem('admin-token');
-            fetch('/api/admin/payments', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({})
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.paymentsData = data;
-                    renderPayments();
-                }
-            })
-            .catch(err => console.error(err));
-        }
-
-        function togglePaymentFilter() {
-            const dropdown = document.getElementById('custom-payment-dropdown');
-            dropdown.classList.toggle('hidden');
-        }
-
-        function setPaymentFilter(val, label) {
-            document.getElementById('payment-status-filter').value = val;
-            document.getElementById('custom-payment-filter-text').innerText = label;
-            document.getElementById('custom-payment-dropdown').classList.add('hidden');
-            renderPayments();
-        }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const container = document.getElementById('custom-payment-filter-container');
-            if (container && !container.contains(event.target)) {
-                const dropdown = document.getElementById('custom-payment-dropdown');
-                if (dropdown) dropdown.classList.add('hidden');
-            }
-        });
-
-        function renderPayments() {
-            if (!window.paymentsData || !window.paymentsData.transactions) return;
-            const data = window.paymentsData;
-            const stats = data.stats;
-            const txns = data.transactions;
-            const filterVal = document.getElementById('payment-status-filter').value;
-
-            document.getElementById('pay-stat-initiated').innerText = stats.initiated || 0;
-            document.getElementById('pay-stat-success').innerText = (stats.success || 0) + ' Success';
-            document.getElementById('pay-stat-pending').innerText = (stats.pending || 0) + ' Pending';
-            document.getElementById('pay-stat-failed').innerText = (stats.failed || 0) + ' Failed';
-            document.getElementById('pay-stat-revenue').innerText = '₹' + (stats.revenue || 0).toLocaleString();
-            document.getElementById('pay-stat-refunds').innerText = '₹' + (stats.refunds_amount || 0).toLocaleString();
-            document.getElementById('pay-stat-settled').innerText = '₹' + (stats.settlements_amount || 0).toLocaleString();
-
-            const tbody = document.getElementById('payments-table-body');
-            tbody.innerHTML = '';
-            
-            const filteredTxns = filterVal === 'ALL' ? txns : txns.filter(t => t.payment_status === filterVal);
-            
-            filteredTxns.forEach(t => {
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
-                
-                const pStatusColor = t.payment_status === 'SUCCESS' ? 'text-emerald-400' : (t.payment_status === 'FAILED' ? 'text-rose-400' : 'text-amber-400');
-                const rStatusColor = t.recharge_status === 'SUCCESS' ? 'text-emerald-400' : (t.recharge_status === 'FAILED' ? 'text-rose-400' : 'text-amber-400');
-
-                tr.innerHTML = `
-                    <td class="p-4 font-mono text-xs text-slate-300">${t.order_id}</td>
-                    <td class="p-4 font-mono text-xs text-slate-300">${t.gateway_txn_id || 'N/A'}</td>
-                    <td class="p-4 font-medium text-white">₹${t.amount}</td>
-                    <td class="p-4 font-semibold ${pStatusColor}">${t.payment_status}</td>
-                    <td class="p-4 font-semibold ${rStatusColor}">${t.recharge_status}</td>
-                    <td class="p-4 text-slate-400 text-sm">${new Date(t.created_at).toLocaleString()}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function toggleRefundFilter() {
-            document.getElementById('custom-refund-dropdown').classList.toggle('hidden');
-        }
-
-        function setRefundFilter(value, text) {
-            document.getElementById('custom-refund-filter-text').innerText = text;
-            document.getElementById('refund-filter').value = value;
-            window.currentRefundFilter = value;
-            document.getElementById('custom-refund-dropdown').classList.add('hidden');
-            renderRefundsTable();
-        }
-
-        function fetchRefundsData() {
-            const token = sessionStorage.getItem('admin-token');
-            fetch('/api/admin/refunds', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({})
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.allRefunds = data.refunds || [];
-                    renderRefundsTable();
-                }
-            })
-            .catch(err => console.error(err));
-        }
-
-        function renderRefundsTable() {
-            const tbody = document.getElementById('refunds-table-body');
-            tbody.innerHTML = '';
-            
-            const filteredRefunds = window.currentRefundFilter === 'ALL' 
-                ? window.allRefunds 
-                : window.allRefunds.filter(r => r.status.toUpperCase() === window.currentRefundFilter);
-
-            filteredRefunds.forEach(r => {
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer";
-                tr.onclick = (e) => {
-                    if(e.target.tagName !== 'BUTTON') {
-                        openRefundModal(r);
-                    }
+        window.deleteAdmin = function(email) {
+            showSuperConfirm("Are you sure you want to delete this admin?", "Delete Admin", () => {
+                const payload = {
+                    passcode: sessionStorage.getItem('super-passcode'),
+                    action: 'delete_admin',
+                    email: email
                 };
-
-                const statusColor = (r.status === 'APPROVED' || r.status === 'REFUNDED') ? 'text-emerald-400' 
-                                : (r.status === 'REJECTED' ? 'text-rose-400' : 'text-amber-400');
-                
-                tr.innerHTML = `
-                    <td class="p-4 font-mono text-xs text-slate-300">${r.order_id}</td>
-                    <td class="p-4 font-medium text-white">${r.user_phone || 'N/A'}</td>
-                    <td class="p-4 font-medium text-white">₹${r.amount}</td>
-                    <td class="p-4 text-slate-300 text-sm truncate max-w-xs" title="${r.reason}">${r.reason}</td>
-                    <td class="p-4 font-semibold ${statusColor}">${r.status}</td>
-                    <td class="p-4 text-slate-400 text-sm">${new Date(r.requested_at).toLocaleString()}</td>
-                    <td class="p-4 text-right">
-                        <button onclick="openRefundModal(${JSON.stringify(r).replace(/"/g, '&quot;')})" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition">View</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function openRefundModal(r) {
-            const content = document.getElementById('refund-modal-content');
-            const actions = document.getElementById('refund-modal-actions');
-            const role = sessionStorage.getItem('admin-role') || '';
-            const canAction = role === 'operations' || role === 'superadmin' || role === 'admin';
-            
-            const statusColor = (r.status === 'APPROVED' || r.status === 'REFUNDED') ? 'text-emerald-400' 
-                                : (r.status === 'REJECTED' ? 'text-rose-400' : 'text-amber-400');
-
-            content.innerHTML = `
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-black/30 p-3 rounded-lg border border-white/5">
-                            <div class="text-xs text-slate-400 mb-1">Order ID</div>
-                            <div class="font-mono text-sm text-white">${r.order_id}</div>
-                        </div>
-                        <div class="bg-black/30 p-3 rounded-lg border border-white/5">
-                            <div class="text-xs text-slate-400 mb-1">User</div>
-                            <div class="font-mono text-sm text-white">${r.user_phone || 'N/A'}</div>
-                        </div>
-                        <div class="bg-black/30 p-3 rounded-lg border border-white/5">
-                            <div class="text-xs text-slate-400 mb-1">Amount</div>
-                            <div class="text-lg font-bold text-white">₹${r.amount}</div>
-                        </div>
-                        <div class="bg-black/30 p-3 rounded-lg border border-white/5">
-                            <div class="text-xs text-slate-400 mb-1">Status</div>
-                            <div class="font-bold ${statusColor}">${r.status}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-black/30 p-4 rounded-lg border border-white/5 mt-4">
-                        <div class="text-xs text-slate-400 mb-2">Failure Reason</div>
-                        <p class="text-sm text-slate-200 whitespace-pre-wrap">${r.reason}</p>
-                    </div>
-
-                    ${r.approved_by ? `
-                    <div class="bg-white/5 p-3 rounded-lg flex justify-between items-center mt-4">
-                        <span class="text-xs text-slate-400">Processed By</span>
-                        <span class="text-sm text-white">${r.approved_by}</span>
-                    </div>` : ''}
-                    
-                    ${r.gateway_refund_id ? `
-                    <div class="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20 mt-4">
-                        <div class="text-xs text-emerald-500/70 mb-1">Cashfree Refund ID</div>
-                        <div class="font-mono text-sm text-emerald-400">${r.gateway_refund_id}</div>
-                    </div>` : ''}
-                </div>
-            `;
-
-            if (r.status === 'PENDING' && canAction) {
-                actions.innerHTML = `
-                    <button onclick="handleRefundAction(${r.id}, 'retry')" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition shadow-lg shadow-indigo-500/20">Retry Recharge</button>
-                    <button onclick="handleRefundAction(${r.id}, 'reject')" class="px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 rounded-lg text-sm font-medium transition">Reject</button>
-                    <button onclick="handleRefundAction(${r.id}, 'approve')" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition shadow-lg shadow-emerald-500/20">Approve Refund</button>
-                `;
-            } else {
-                actions.innerHTML = `
-                    <button onclick="closeRefundModal()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition">Close</button>
-                `;
-            }
-
-            document.getElementById('refund-details-modal').classList.remove('hidden');
-        }
-
-        function closeRefundModal() {
-            document.getElementById('refund-details-modal').classList.add('hidden');
-        }
-
-        function handleRefundAction(refundId, action) {
-            const token = sessionStorage.getItem('admin-token');
-            const btnStates = document.querySelectorAll('#refund-modal-actions button');
-            btnStates.forEach(btn => btn.disabled = true);
-            
-            fetch('/api/admin/refunds/action', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ refund_id: refundId, action: action })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('Refund ' + action + ' initiated successfully');
-                    closeRefundModal();
-                    fetchRefundsData();
-                } else {
-                    showToast(data.error || 'Action failed', 'error');
-                    btnStates.forEach(btn => btn.disabled = false);
-                }
-            })
-            .catch(err => {
-                showToast('Error processing refund', 'error');
-                btnStates.forEach(btn => btn.disabled = false);
-            });
-        }
-
-
-        function fetchSettlementsData() {
-            const token = sessionStorage.getItem('admin-token');
-            fetch('/api/admin/settlements', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({})
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    const tbody = document.getElementById('settlements-table-body');
-                    tbody.innerHTML = '';
-                    data.settlements.forEach(s => {
-                        const tr = document.createElement('tr');
-                        tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
-                        const statusColor = s.status === 'SUCCESS' ? 'text-emerald-400' : 'text-amber-400';
-                        
-                        tr.innerHTML = `
-                            <td class="p-4 text-white">${s.date}</td>
-                            <td class="p-4 font-medium text-slate-300">₹${s.total_collection}</td>
-                            <td class="p-4 font-medium text-rose-400">₹${s.fees}</td>
-                            <td class="p-4 font-bold text-emerald-400">₹${s.net_settlement}</td>
-                            <td class="p-4 font-semibold ${statusColor}">${s.status}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                }
-            })
-            .catch(err => console.error(err));
-        }
-
-        function exportSettlementsCSV() {
-            const token = sessionStorage.getItem('admin-token');
-            fetch('/api/admin/settlements/export', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({})
-            })
-            .then(res => {
-                if (res.ok) return res.blob();
-                throw new Error('Failed to export CSV. Insufficient permissions?');
-            })
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'settlements.csv';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(err => showToast(err.message, 'error'));
-        }
-
-        // Mobile Menu Toggle Logic
-        document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
-            document.getElementById('admin-sidebar').classList.add('mobile-open');
-        });
-        document.getElementById('close-sidebar-btn')?.addEventListener('click', () => {
-            document.getElementById('admin-sidebar').classList.remove('mobile-open');
-        });
-        // Close sidebar when a tab is clicked on mobile
-        document.querySelectorAll('.sidebar-item').forEach(item => {
-            item.addEventListener('click', () => {
-                if (window.innerWidth <= 768) {
-                    document.getElementById('admin-sidebar').classList.remove('mobile-open');
-                }
-            });
-        });
-
-        function loadFraudData() {
-            const token = sessionStorage.getItem('admin-token');
-            if (!token) return;
-
-            document.getElementById('fraud-table-body').innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-500">Loading...</td></tr>';
-
-            fetch('/api/admin/fraud', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify({})
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const tbody = document.getElementById('fraud-table-body');
-                    tbody.innerHTML = '';
-                    
-                    if (!data.alerts || data.alerts.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No fraud alerts detected.</td></tr>';
-                        return;
+                fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+                .then(r=>r.json()).then(d => { 
+                    if(d.success) {
+                        showSuperModal('Admin successfully deleted.', 'Success');
+                        document.getElementById('login-btn').click();
                     }
-
-                    data.alerts.forEach(alert => {
-                        let statusColor = "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
-                        if (alert.status === 'RESOLVED') statusColor = "bg-green-500/20 text-green-400 border-green-500/50";
-
-                        const tr = document.createElement('tr');
-                        tr.className = "border-b border-white/5 hover:bg-white/5 transition";
-                        tr.innerHTML = `
-                            <td class="p-4"><span class="font-bold text-white">${alert.user_phone}</span></td>
-                            <td class="p-4"><span class="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">${alert.alert_type}</span></td>
-                            <td class="p-4 text-sm text-slate-300">${alert.description}</td>
-                            <td class="p-4 text-xs text-slate-500 font-mono">${alert.ip_address || 'N/A'}<br/>${alert.device_id || 'N/A'}</td>
-                            <td class="p-4 text-xs text-slate-400">${new Date(alert.created_at).toLocaleString()}</td>
-                            <td class="p-4">
-                                <span class="px-2 py-1 rounded-full text-xs font-bold border ${statusColor}">${alert.status}</span>
-                            </td>
-                            <td class="p-4">
-                                ${alert.status === 'PENDING' ? `
-                                    <button onclick="fraudAction('suspend_user', '${alert.id}', '${alert.user_phone}')" class="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs mr-2 transition">Block User</button>
-                                    <button onclick="fraudAction('resolve_alert', '${alert.id}', '${alert.user_phone}')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs transition">Ignore</button>
-                                ` : `
-                                    <span class="text-xs text-slate-500">${alert.action_taken || 'Resolved'}</span>
-                                `}
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                } else {
-                    showToast("Failed to load fraud data: " + data.error, "error");
-                }
-            })
-            .catch(err => {
-                showToast("Error loading fraud data: " + err.message, "error");
+                    else showSuperModal(d.error, 'Error'); 
+                });
             });
-        }
+        };
 
-        window.fraudAction = function(action, alertId, userPhone) {
-            if(!confirm(`Are you sure you want to perform: ${action}?`)) return;
-            const token = sessionStorage.getItem('admin-token');
-            if(!token) return;
+        window.searchWallets = function() {
+            const phone = document.getElementById('wallet-search-phone').value.trim();
+            const rows = document.querySelectorAll('#wallets-table-body tr');
+            rows.forEach(r => {
+                if(!phone || r.innerText.includes(phone)) r.style.display = '';
+                else r.style.display = 'none';
+            });
+        };
 
-            fetch('/api/admin/fraud/action', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify({ action: action, alert_id: alertId, user_phone: userPhone })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    showToast("Action applied successfully.", "success");
-                    loadFraudData();
-                } else {
-                    showToast("Failed: " + data.error, "error");
+        window.adjustWallet = function(phone) {
+            const amt = prompt("Enter amount to adjust for " + phone + " (e.g. 500 to add, -500 to deduct):");
+            if(!amt || isNaN(amt)) return;
+            const payload = {
+                passcode: sessionStorage.getItem('super-passcode'),
+                action: 'update_wallet',
+                phone: phone,
+                amount: amt
+            };
+            fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+            .then(r=>r.json()).then(d => { 
+                if(d.success) {
+                    showSuperModal('Wallet Adjusted Successfully!', 'Success'); 
+                    document.getElementById('login-btn').click();
                 }
-            })
-            .catch(err => {
-                showToast("Error: " + err.message, "error");
+                else showSuperModal(d.error, 'Error'); 
             });
         };
     </script>
-    <script src="/footer.js"></script>
+    <script src="/footer.js?v=20260705110929"></script>
 </body>
 </html>
