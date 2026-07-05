@@ -1323,6 +1323,11 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 print(f"Error fetching tickets: {e}")
                 self._send_json(500, {"success": False, "error": str(e)})
         else:
+            if self.path == '/':
+                self.send_response(302)
+                self.send_header('Location', '/admin')
+                self.end_headers()
+                return
             if not os.path.exists(self.translate_path(self.path)):
                 self.path = '/'
             super().do_GET()
