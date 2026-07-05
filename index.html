@@ -89,8 +89,7 @@
             <p class="text-slate-400 mb-4 text-sm">Secure authorization required.</p>
 <div class="text-left mb-4">
     <label class="block text-xs text-slate-400 mb-1">Role</label>
-    <select id="login-role" class="w-full bg-black/50 border border-purple-500/30 rounded-lg p-3 text-white outline-none focus:border-purple-500">
-        <option value="super">Super Admin</option>
+    <select id="login-role" class="appearance-none w-full bg-black/50 border border-purple-500/30 rounded-lg p-3 text-white outline-none focus:border-purple-500">
         <option value="admin">Operations Admin</option>
         <option value="support">Support Executive</option>
     </select>
@@ -111,8 +110,8 @@
                     <i data-lucide="crown" class="w-5 h-5 text-white"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight">Super Admin</h1>
-                    <p class="text-xs text-purple-400">System Oversight</p>
+                    <h1 class="font-bold text-lg leading-tight">Operations Admin</h1>
+                    <p class="text-xs text-purple-400">Operations Control</p>
                 </div>
             </div>
         </div>
@@ -688,7 +687,7 @@
         // Login
         document.getElementById('login-btn').addEventListener('click', () => {
             const passcode = document.getElementById('super-passcode').value;
-            fetch('/api/superadmin/data', {
+            fetch('/api/admin/data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ passcode })
