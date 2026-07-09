@@ -17,7 +17,7 @@
         .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
         .sidebar-item.active { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
     </style>
-    <link rel="stylesheet" href="/responsive.css?v=20260709230859">
+    <link rel="stylesheet" href="/responsive.css?v=20260709231156">
 
     <style class="global-footer-fix">
         /* OVERRIDE CACHED CSS FOR MOBILE FOOTER */
@@ -1142,6 +1142,83 @@
             });
         };
 
+        // --- Coupon API Integration ---
+        window.loadCoupons = async function() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/rewards');
+                const coupons = await res.json();
+                const tbody = document.getElementById('coupons-table-body');
+                if (!tbody) return;
+                
+                if (coupons && coupons.length > 0) {
+                    tbody.innerHTML = coupons.map(c => `
+                        <tr class="hover:bg-white/5 transition">
+                            <td class="p-4 font-bold text-white">${c.code}</td>
+                            <td class="p-4 text-emerald-400">${c.discount}</td>
+                            <td class="p-4">₹${c.cap || 'N/A'}</td>
+                            <td class="p-4">${c.limit || 'Unlimited'}</td>
+                            <td class="p-4">${new Date(c.created_at || Date.now()).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">No coupons active.</td></tr>';
+                }
+            } catch (e) {
+                console.error("Error loading coupons", e);
+            }
+        };
+
+        window.createCoupon = async function() {
+            const code = document.getElementById('cpn-code').value.trim().toUpperCase();
+            const discount = document.getElementById('cpn-val').value.trim();
+            const cap = document.getElementById('cpn-cap').value.trim();
+            const limit = document.getElementById('cpn-limit').value.trim();
+
+            if (!code || !discount) {
+                showSuperModal('Please enter Code and Discount %', 'Validation Error');
+                return;
+            }
+
+            const payload = {
+                code: code,
+                discount: discount + "% OFF",
+                cap: cap,
+                limit: limit,
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/admin/promo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer SUPER_SECRET_ADMIN_KEY_123'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showSuperModal('Coupon Code Created!', 'Success');
+                    document.getElementById('cpn-code').value = '';
+                    loadCoupons();
+                } else {
+                    showSuperModal('Failed to create coupon', 'Error');
+                }
+            } catch (e) {
+                showSuperModal('API Error', 'Error');
+            }
+        };
+
+        // Call loadCoupons on auth success
+        document.getElementById('login-btn').addEventListener('click', () => {
+            setTimeout(() => {
+                if(document.getElementById('login-overlay').classList.contains('hidden')) {
+                    loadCoupons();
+                }
+            }, 100);
+        });
+
+
         // --- WebSocket Live Chat Logic (Admin) ---
         let adminWs = null;
         let activeSessions = {};
@@ -1246,6 +1323,6 @@
             }, 100);
         });
     </script>
-    <script src="/footer.js?v=20260709230859"></script>
+    <script src="/footer.js?v=20260709231156"></script>
 </body>
 </html>
