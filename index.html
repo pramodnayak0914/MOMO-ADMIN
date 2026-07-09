@@ -17,7 +17,7 @@
         .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
         .sidebar-item.active { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
     </style>
-    <link rel="stylesheet" href="/responsive.css?v=20260709223039">
+    <link rel="stylesheet" href="/responsive.css?v=20260709224037">
 
     <style class="global-footer-fix">
         /* OVERRIDE CACHED CSS FOR MOBILE FOOTER */
@@ -923,22 +923,27 @@
                 return;
             }
             const payload = {
-                passcode: sessionStorage.getItem('super-passcode'),
-                action: 'create_coupon',
                 code: codeInput.toUpperCase(),
                 value: parseFloat(document.getElementById('cpn-val').value),
                 max_cap: parseFloat(document.getElementById('cpn-cap').value),
                 usage_limit: parseInt(document.getElementById('cpn-limit').value)
             };
-            fetch('/api/superadmin/action', { method: 'POST', body: JSON.stringify(payload) })
+            fetch('http://127.0.0.1:8000/api/admin/promo', { 
+                method: 'POST', 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-api-key': 'super-secret-admin-key-2026'
+                },
+                body: JSON.stringify(payload) 
+            })
             .then(r=>r.json()).then(d => { 
-                if(d.success) {
-                    showSuperModal('Coupon Created!', 'Success');
-                    document.getElementById('login-btn').click(); // Refresh data
+                if(d.status === 'success') {
+                    showSuperModal('Coupon Created and pushed to Backend!', 'Success');
+                    // We mock refresh for now
                 } else {
-                    showSuperModal(d.error, 'Error');
+                    showSuperModal(d.error || 'Failed', 'Error');
                 }
-            });
+            }).catch(e => showSuperModal("Server not running. Start server.py!", "Error"));
         };
         
         window.sendBroadcast = function() {
@@ -1100,6 +1105,6 @@
             });
         };
     </script>
-    <script src="/footer.js?v=20260709223039"></script>
+    <script src="/footer.js?v=20260709224037"></script>
 </body>
 </html>
