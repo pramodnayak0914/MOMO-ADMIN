@@ -17,7 +17,38 @@
         .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
         .sidebar-item.active { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
     </style>
-    <link rel="stylesheet" href="/responsive.css?v=20260706204737">
+    <link rel="stylesheet" href="/responsive.css?v=20260709213925">
+
+    <style class="global-footer-fix">
+        /* OVERRIDE CACHED CSS FOR MOBILE FOOTER */
+        @media (max-width: 768px) {
+            .footer-bottom.container, .footer-bottom {
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+                text-align: center !important;
+                gap: 24px !important;
+            }
+            .footer-links-row {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 16px !important;
+                width: 100% !important;
+            }
+            .footer-links-row span {
+                display: none !important;
+            }
+            .footer-links-row a {
+                display: block !important;
+                width: 100% !important;
+                text-align: center !important;
+                padding: 8px 0 !important;
+            }
+        }
+    </style>
 </head>
 <body class="h-screen flex overflow-hidden">
     <!-- Application Level Modal -->
@@ -1069,6 +1100,6 @@
             });
         };
     </script>
-    <script src="/footer.js?v=20260706204737"></script>
+    <script src="/footer.js?v=20260709213925"></script>
 </body>
 </html>
