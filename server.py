@@ -1010,8 +1010,20 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     return
                 
                 if not DATABASE_URL:
-                    self._send_json(500, {"success": False, "error": "Database URL is not configured on the server."})
+                    import sqlite3
+                    conn = sqlite3.connect('/Users/pramod2.nayak/MOMO-AI/local_database.db', check_same_thread=False)
+                    cur = conn.cursor()
+                    cur.execute('''
+                        INSERT INTO app_config (key, value) 
+                        VALUES ('assistant_name', ?) 
+                        ON CONFLICT (key) DO UPDATE SET value = excluded.value
+                    ''', (new_name,))
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+                    self._send_json(200, {"success": True})
                     return
+                    
                 if not psycopg2:
                     self._send_json(500, {"success": False, "error": "Python Database Driver failed to load. Check PYTHON_VERSION."})
                     return
