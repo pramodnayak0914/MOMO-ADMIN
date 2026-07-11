@@ -66,6 +66,13 @@ def init_db():
     if not DATABASE_URL or not psycopg2:
         return
     try:
+        import services_db
+        services_db.init_schema()
+        print("Service Management Schema initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing Service Management Schema: {e}")
+
+    try:
         conn = psycopg2.connect(DATABASE_URL)
         conn.autocommit = True
         cur = conn.cursor()
@@ -320,9 +327,19 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         post_data = self._read_body()
         try:
-            data = json.loads(post_data)
+            data = json.loads(post_data) if post_data else {}
         except Exception as e:
             return self._send_json(400, {"success": False, "error": f"JSON Parse Error: {str(e)} | Body Length: {len(post_data)} | Body: {post_data.decode('utf-8', errors='ignore')}"})
+
+        from urllib.parse import urlparse
+        parsed_path = urlparse(self.path)
+        
+        try:
+            import internal_api_handlers
+            if internal_api_handlers.handle_internal_post(self, parsed_path, data):
+                return
+        except ImportError:
+            pass
 
         if self.path in ('/api/admin/login', '/api/auth/login'):
             email = data.get('email')
@@ -1230,6 +1247,13 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             if admin['role'] not in ['superadmin', 'admin', 'operations']:
                 return self._send_json(403, {"error": "Forbidden"})
             try:
+                if not DATABASE_URL or not psycopg2:
+                    return self._send_json(200, {
+                        "success": True, 
+                        "alerts": [], 
+                        "stats": {"suspended_count": 0, "active_alerts": 0, "top_ips": []}
+                    })
+
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
                 
@@ -1281,6 +1305,9 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             user_phone = data.get('user_phone')
             
             try:
+                if not DATABASE_URL or not psycopg2:
+                    return self._send_json(200, {"success": True})
+
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
                 
@@ -1308,6 +1335,13 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         from urllib.parse import urlparse, parse_qs
         parsed_path = urlparse(self.path)
+        
+        try:
+            import internal_api_handlers
+            if internal_api_handlers.handle_internal_get(self, parsed_path):
+                return
+        except ImportError:
+            pass
                     
         if parsed_path.path == '/api/support/tickets':
             query_params = parse_qs(parsed_path.query)
@@ -1345,9 +1379,25 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_PUT(self):
+        from urllib.parse import urlparse
+        parsed_path = urlparse(self.path)
+        content_length = int(self.headers.get('Content-Length', 0))
+        
+        if self.path.startswith('/api/internal/'):
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data) if post_data else {}
+            except json.JSONDecodeError:
+                data = {}
+            try:
+                import internal_api_handlers
+                if internal_api_handlers.handle_internal_put(self, parsed_path, data):
+                    return
+            except ImportError:
+                pass
+                
         if self.path.startswith('/api/support/tickets/'):
             ticket_id = self.path.split('/')[-1]
-            content_length = int(self.headers.get('Content-Length', 0))
             if content_length == 0:
                 self._send_json(400, {"success": False, "error": "No payload"})
                 return

@@ -209,6 +209,10 @@
                     <i data-lucide="smartphone" class="w-5 h-5"></i>
                     <span>Recharges</span>
                 </div>
+                <div class="sidebar-item pl-10 text-sm" data-tab="tab-services" style="border-left: 2px solid transparent; margin-left: 10px;">
+                    <i data-lucide="server" class="w-4 h-4"></i>
+                    <span>Service Management</span>
+                </div>
                 <div class="sidebar-item" data-tab="tab-payments">
                     <i data-lucide="credit-card" class="w-5 h-5"></i>
                     <span>Payment Dashboard</span>
@@ -406,6 +410,165 @@
             </div>
 
             <!-- NEW TAB: PAYMENTS -->
+            <!-- SERVICE MANAGEMENT TAB -->
+            <div id="tab-services" class="tab-content">
+                
+                <!-- Service Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-2xl relative overflow-hidden group border border-white/5 shadow-xl hover:shadow-2xl transition-all">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-400 font-semibold tracking-wider uppercase mb-1">Total Services</p>
+                                <h3 class="text-4xl font-bold text-white tracking-tight" id="stat-total-services">0</h3>
+                                <p class="text-xs text-gray-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Ready for deployment</p>
+                            </div>
+                            <div class="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                                <i data-lucide="layers" class="w-6 h-6 text-blue-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl relative overflow-hidden group border border-white/5 shadow-xl hover:shadow-2xl transition-all">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-400 font-semibold tracking-wider uppercase mb-1">Active Services</p>
+                                <h3 class="text-4xl font-bold text-white tracking-tight" id="stat-active-services">0</h3>
+                                <p class="text-xs text-gray-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Currently operational</p>
+                            </div>
+                            <div class="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-emerald-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl relative overflow-hidden group border border-white/5 shadow-xl hover:shadow-2xl transition-all">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-400 font-semibold tracking-wider uppercase mb-1">Total Operators</p>
+                                <h3 class="text-4xl font-bold text-white tracking-tight" id="stat-total-operators">0</h3>
+                                <p class="text-xs text-gray-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Mapped globally</p>
+                            </div>
+                            <div class="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                                <i data-lucide="share-2" class="w-6 h-6 text-purple-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Master-Detail Split -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- Master (Left) -->
+                    <div class="card lg:col-span-4 flex flex-col h-[750px] shadow-2xl border border-white/5 bg-[#13131a]/80 backdrop-blur-xl">
+                        <div class="mb-5 space-y-4">
+                            <h2 class="text-lg font-bold tracking-wide">Service Catalog</h2>
+                            <div class="flex flex-col gap-3">
+                                <div class="relative w-full">
+                                    <input type="text" id="search-services" placeholder="Search services..." class="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm placeholder-gray-500">
+                                    <i data-lucide="search" class="absolute left-3.5 top-3 w-4 h-4 text-gray-500"></i>
+                                </div>
+                                <select id="filter-service-status" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm text-gray-300">
+                                    <option value="">All Status</option>
+                                    <option value="1">Active Only</option>
+                                    <option value="0">Inactive Only</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-y-auto flex-1 pr-2 rounded-lg" id="services-master-list">
+                            <!-- Compact Table -->
+                            <table class="w-full text-sm">
+                                <thead class="sticky top-0 bg-[#1a1a24] z-10 border-b border-white/10">
+                                    <tr class="text-left text-gray-400">
+                                        <th class="py-2 px-3 font-medium">Service</th>
+                                        <th class="py-2 px-3 font-medium text-center w-24">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="services-table-body">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-4 flex justify-between items-center text-xs text-gray-400 pt-4 border-t border-white/10">
+                            <span id="services-pagination-info">Showing 0</span>
+                            <div class="flex gap-1">
+                                <button id="btn-services-prev" class="px-2 py-1 rounded bg-[#13131a] border border-white/10 hover:bg-white/5 disabled:opacity-50">&lt;</button>
+                                <button id="btn-services-next" class="px-2 py-1 rounded bg-[#13131a] border border-white/10 hover:bg-white/5 disabled:opacity-50">&gt;</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detail Workspace (Right) -->
+                    <div class="card lg:col-span-8 h-[750px] flex flex-col shadow-2xl border border-white/5 bg-[#1a1a24]/90 backdrop-blur-xl relative" id="service-workspace-container">
+                        
+                        <!-- Loading State (Skeleton) -->
+                        <div id="workspace-loading" class="hidden absolute inset-0 z-10 bg-[#1a1a24]/90 backdrop-blur-sm flex flex-col p-8 rounded-2xl">
+                            <div class="animate-pulse flex items-start gap-4 mb-8 pb-6 border-b border-white/5">
+                                <div class="w-14 h-14 bg-white/5 rounded-xl"></div>
+                                <div class="flex-1 space-y-3 py-1">
+                                    <div class="h-6 bg-white/5 rounded w-1/4"></div>
+                                    <div class="h-4 bg-white/5 rounded w-1/3"></div>
+                                </div>
+                            </div>
+                            <div class="animate-pulse space-y-6">
+                                <div class="h-4 bg-white/5 rounded w-full"></div>
+                                <div class="h-4 bg-white/5 rounded w-5/6"></div>
+                                <div class="h-4 bg-white/5 rounded w-4/6"></div>
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="workspace-empty" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+                            <div class="w-20 h-20 rounded-full bg-black/40 border border-white/5 flex items-center justify-center text-gray-500 mb-6 shadow-inner">
+                                <i data-lucide="layout-template" class="w-10 h-10"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-3 tracking-wide">No Service Selected</h3>
+                            <p class="text-gray-400 max-w-md text-sm leading-relaxed">Select a service from the catalog to view details, manage operators, and review future provider information.</p>
+                        </div>
+                        
+                        <!-- Active State -->
+                        <div id="workspace-active" class="hidden flex-1 flex flex-col overflow-hidden">
+                            <!-- Header & Tabs -->
+                            <div class="border-b border-white/10 pb-0 mb-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-start gap-5">
+                                        <div class="w-14 h-14 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center text-gray-300 shadow-inner" id="ws-icon-container">
+                                            <i data-lucide="layers" id="ws-icon" class="w-7 h-7"></i>
+                                        </div>
+                                        <div class="flex flex-col gap-1.5">
+                                            <h2 class="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+                                                <span id="ws-title">Service Name</span>
+                                                <span id="ws-badge-status" class="px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+                                            </h2>
+                                            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400 font-medium" id="ws-meta">
+                                                <span id="ws-category" class="capitalize">Category</span>
+                                                <span class="text-gray-600">•</span>
+                                                <span id="ws-operator-count" class="flex items-center gap-1.5"><i data-lucide="users" class="w-4 h-4"></i> 0 Operators</span>
+                                                <span class="text-gray-600">•</span>
+                                                <span id="ws-last-updated" class="text-gray-500 text-xs">Updated Today</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2" id="ws-header-actions">
+                                        <!-- Actions injected here dynamically based on module if needed -->
+                                    </div>
+                                </div>
+                                <div class="flex gap-6 text-sm font-medium" id="workspace-tabs">
+                                    <button class="pb-3 border-b-2 border-blue-500 text-blue-400 transition-colors" data-module="overview" onclick="switchWorkspaceTab('overview')">Overview</button>
+                                    <button class="pb-3 border-b-2 border-transparent text-gray-400 hover:text-white transition-colors" data-module="operators" onclick="switchWorkspaceTab('operators')">Operators</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Dynamic Module Container -->
+                            <div id="workspace-module-container" class="flex-1 overflow-y-auto pr-2">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="tab-payments" class="tab-content">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
@@ -881,6 +1044,142 @@
             </div>
 
         </main>
+    </div>
+
+    <!-- Edit Service Modal -->
+    <div id="edit-service-modal" class="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden transition-opacity duration-300">
+        <div class="bg-[#1a1a24] border border-white/10 w-full max-w-xl rounded-3xl p-6 relative shadow-2xl transform transition-all duration-300">
+            <button onclick="closeServiceModal()" class="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <h2 class="text-xl font-bold mb-6 flex items-center gap-3">
+                <i data-lucide="edit-3" class="text-blue-400"></i>
+                <span id="service-modal-title">Edit Service</span>
+            </h2>
+            <form id="edit-service-form" class="space-y-4">
+                <input type="hidden" id="edit-service-id">
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Display Name</label>
+                    <input type="text" id="edit-service-name" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Description</label>
+                    <textarea id="edit-service-desc" rows="2" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Category</label>
+                        <select id="edit-service-category" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                            <option value="utility">Utility</option>
+                            <option value="recharge">Recharge</option>
+                            <option value="travel">Travel</option>
+                            <option value="finance">Finance</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Icon Name (Lucide)</label>
+                        <input type="text" id="edit-service-icon" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Display Order</label>
+                        <input type="number" id="edit-service-order" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Status</label>
+                        <select id="edit-service-status" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-black/20 p-4 rounded-xl border border-white/5 space-y-3 mt-4">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="edit-service-featured" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:bg-blue-500 transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                        </div>
+                        <span class="text-sm font-medium">Featured (Highlight with gradient border)</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="edit-service-homepage" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:bg-emerald-500 transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                        </div>
+                        <span class="text-sm font-medium">Show on Homepage Top Grid</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="edit-service-comingsoon" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:bg-amber-500 transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                        </div>
+                        <span class="text-sm font-medium">Mark as 'Coming Soon'</span>
+                    </label>
+                </div>
+                
+                <div class="pt-4 flex justify-end gap-3">
+                    <button type="button" onclick="closeServiceModal()" class="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-medium">Cancel</button>
+                    <button type="button" onclick="saveService()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Operator Modal -->
+    <div id="edit-operator-modal" class="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden transition-opacity duration-300">
+        <div class="bg-[#1a1a24] border border-white/10 w-full max-w-xl rounded-3xl p-6 relative shadow-2xl transform transition-all duration-300">
+            <button onclick="closeOperatorModal()" class="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <h2 class="text-xl font-bold mb-6 flex items-center gap-3">
+                <i data-lucide="edit-2" class="text-purple-400"></i>
+                <span id="operator-modal-title">Edit Operator Presentation</span>
+            </h2>
+            <form id="edit-operator-form" class="space-y-4">
+                <input type="hidden" id="edit-operator-id">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Display Name</label>
+                        <input type="text" id="edit-operator-name" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Logo URL (Optional)</label>
+                        <input type="text" id="edit-operator-logo" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Priority</label>
+                        <input type="number" id="edit-operator-priority" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Status</label>
+                        <select id="edit-operator-status" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="pt-4 flex justify-end gap-3">
+                    <button type="button" onclick="closeOperatorModal()" class="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-medium">Cancel</button>
+                    <button type="button" onclick="saveOperator()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- React Tickets Component -->
@@ -2202,6 +2501,7 @@
             });
         };
     </script>
+    <script src="script_services.js"></script>
 
 </body>
 </html>
