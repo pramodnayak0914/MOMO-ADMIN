@@ -3,7 +3,15 @@ import socketserver
 import json
 import urllib.request
 import os
+import sys
 
+try:
+    from services.support_service import support_service
+    from services.event_bus import event_bus
+    from services.notification_service import setup_event_listeners
+    setup_event_listeners(event_bus)
+except ImportError as e:
+    print(f"Warning: Could not import shared services: {e}")
 try:
     import psycopg2
     from psycopg2.extras import RealDictCursor
@@ -93,6 +101,15 @@ def init_db():
         except Exception:
             conn.rollback()
         cur.execute('''
+            CREATE TABLE IF NOT EXISTS ticket_sequence (
+                date VARCHAR(8) NOT NULL,
+                ticket_type VARCHAR(10) NOT NULL,
+                service_code VARCHAR(10) NOT NULL,
+                last_sequence INTEGER DEFAULT 0,
+                PRIMARY KEY (date, ticket_type, service_code)
+            )
+        ''')
+        cur.execute('''
             CREATE TABLE IF NOT EXISTS support_tickets (
                 id SERIAL PRIMARY KEY,
                 ticket_id VARCHAR(50) UNIQUE NOT NULL,
@@ -101,6 +118,19 @@ def init_db():
                 target_number VARCHAR(20),
                 description TEXT,
                 status VARCHAR(20) DEFAULT 'OPEN',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                order_id VARCHAR(50),
+                assigned_agent VARCHAR(100),
+                sla_deadline TIMESTAMP,
+                resolved_at TIMESTAMP
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS support_ticket_notes (
+                id SERIAL PRIMARY KEY,
+                ticket_id VARCHAR(100) NOT NULL,
+                note_text TEXT NOT NULL,
+                added_by VARCHAR(100) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -366,7 +396,13 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     return self._send_json(200, {"success": True, "token": pw_hash, "role": row[1]})
             except Exception as e:
                 print(f"Login error: {e}")
+            try:
+                from services.event_bus import event_bus
+                event_bus.publish("security.login.failed", {"email": email, "ip": self.client_address[0]})
+            except:
+                pass
             return self._send_json(401, {"success": False, "error": "Invalid email or password"})
+
 
         elif self.path == '/api/admin/forgot-password':
             email = data.get('email')
@@ -1027,8 +1063,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     return
                 
                 if not DATABASE_URL:
-                    import sqlite3
-                    conn = sqlite3.connect('/Users/pramod2.nayak/MOMO-AI/local_database.db', check_same_thread=False)
+                    from db_adapter import sqlite3_proxy as sqlite3
+                    conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
                     cur = conn.cursor()
                     cur.execute('''
                         INSERT INTO app_config (key, value) 
@@ -1187,6 +1223,11 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 conn.commit()
                 cur.close()
                 conn.close()
+                try:
+                    from services.event_bus import event_bus
+                    event_bus.publish("refund.initiated", {"order_id": order_id, "amount": amount})
+                except Exception as ex:
+                    print(f"Failed to publish refund.initiated: {ex}")
                 return self._send_json(200, {"success": True})
             except Exception as e:
                 return self._send_json(500, {"error": str(e)})
@@ -1343,12 +1384,272 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
         except ImportError:
             pass
                     
-        if parsed_path.path == '/api/support/tickets':
+        if parsed_path.path == '/api/support/tickets' or parsed_path.path == '/api/admin/support/tickets':
             query_params = parse_qs(parsed_path.query)
             user_phone = query_params.get('user_phone', [None])[0]
+            ticket_id = query_params.get('ticket_id', [None])[0]
+            mobile = query_params.get('mobile', [None])[0]
+            service = query_params.get('service', [None])[0]
+            operator = query_params.get('operator', [None])[0]
+            status = query_params.get('status', [None])[0]
+            priority = query_params.get('priority', [None])[0]
+            ticket_type = query_params.get('ticket_type', [None])[0]
+            assigned_agent = query_params.get('assigned_agent', [None])[0]
+            created_by = query_params.get('created_by', [None])[0]
+
+            refund_status = query_params.get('refund_status', [None])[0]
+            date_range = query_params.get('date_range', [None])[0]
             
-            if not DATABASE_URL or not psycopg2:
-                return self._send_json(200, {"success": True, "tickets": []})
+            page = int(query_params.get('page', [1])[0])
+            limit = int(query_params.get('limit', [50])[0])
+            offset = (page - 1) * limit
+            
+            from db_adapter import sqlite3_proxy as sqlite3
+            try:
+                conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                
+                query = "SELECT * FROM support_tickets WHERE 1=1"
+                count_query = "SELECT COUNT(*) FROM support_tickets WHERE 1=1"
+                params = []
+                
+                if user_phone:
+                    query += " AND user_phone = ?"
+                    count_query += " AND user_phone = ?"
+                    params.append(user_phone)
+                if ticket_id:
+                    query += " AND ticket_id LIKE ?"
+                    count_query += " AND ticket_id LIKE ?"
+                    params.append(f"%{ticket_id}%")
+                if mobile:
+                    query += " AND user_phone LIKE ?"
+                    count_query += " AND user_phone LIKE ?"
+                    params.append(f"%{mobile}%")
+                if status and status != 'All':
+                    query += " AND status = ?"
+                    count_query += " AND status = ?"
+                    params.append(status)
+                if priority and priority != 'All':
+                    query += " AND priority = ?"
+                    count_query += " AND priority = ?"
+                    params.append(priority)
+                if ticket_type and ticket_type != 'All':
+                    query += " AND issue_type = ?"
+                    count_query += " AND issue_type = ?"
+                    params.append(ticket_type)
+                if created_by and created_by != 'All':
+                    val = 1 if created_by == 'AI' else 0
+                    query += " AND ai_generated = ?"
+                    count_query += " AND ai_generated = ?"
+                    params.append(val)
+                if assigned_agent and assigned_agent != 'All':
+                    query += " AND assigned_agent = ?"
+                    count_query += " AND assigned_agent = ?"
+                    params.append(assigned_agent)
+                if date_range:
+                    import datetime
+                    today = datetime.datetime.now()
+                    if date_range == 'today':
+                        start_date = today.strftime('%Y-%m-%d 00:00:00')
+                    elif date_range == 'week':
+                        start_date = (today - datetime.timedelta(days=7)).strftime('%Y-%m-%d 00:00:00')
+                    elif date_range == 'month':
+                        start_date = (today - datetime.timedelta(days=30)).strftime('%Y-%m-%d 00:00:00')
+                    else:
+                        start_date = None
+                        
+                    if start_date:
+                        query += " AND created_at >= ?"
+                        count_query += " AND created_at >= ?"
+                        params.append(start_date)
+
+                # Execute count
+                cur.execute(count_query, params)
+                total_count = cur.fetchone()[0]
+                
+                # Execute data fetch
+                query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+                cur.execute(query, params + [limit, offset])
+                
+                tickets = [dict(row) for row in cur.fetchall()]
+                cur.close()
+                conn.close()
+                
+                return self._send_json(200, {
+                    "success": True, 
+                    "tickets": tickets,
+                    "pagination": {
+                        "total": total_count,
+                        "page": page,
+                        "limit": limit,
+                        "pages": (total_count + limit - 1) // limit
+                    }
+                })
+            except Exception as e:
+                print(f"Error fetching tickets from SQLite: {e}")
+                return self._send_json(500, {"success": False, "error": str(e)})
+
+        if self.path.startswith('/api/admin/support/tickets/') and self.path.endswith('/details'):
+            ticket_id = self.path.split('/')[-2]
+            try:
+                from services.admin_support_service import get_ticket_details
+                details = get_ticket_details(ticket_id)
+                if not details:
+                    return self._send_json(404, {"success": False, "error": "Ticket not found"})
+                return self._send_json(200, {"success": True, "data": details})
+            except Exception as e:
+                print(f"Error fetching ticket details: {e}")
+                return self._send_json(500, {"success": False, "error": str(e)})
+
+        
+        if parsed_path.path == '/api/admin/notifications':
+            try:
+                from db_adapter import sqlite3_proxy as sqlite3
+                conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                
+                query_params = dict(urllib.parse.parse_qsl(parsed_path.query))
+                limit = int(query_params.get('limit', 50))
+                offset = int(query_params.get('offset', 0))
+                category = query_params.get('category')
+                status = query_params.get('status') # 'unread' or 'read'
+                
+                # We assume admin is logged in. In a real app we'd get their role/email from session.
+                # For now, we fetch notifications for 'admin' role or globally broadcasted.
+                
+                sql = "SELECT * FROM notifications WHERE target_role = 'admin' OR target_role IS NULL"
+                params = []
+                
+                if category:
+                    sql += " AND category = ?"
+                    params.append(category)
+                if status:
+                    sql += " AND read_status = ?"
+                    params.append(status)
+                    
+                # Expiry check
+                sql += " AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)"
+                    
+                sql += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+                params.extend([limit, offset])
+                
+                cur.execute(sql, tuple(params))
+                rows = [dict(r) for r in cur.fetchall()]
+                
+                # Count total
+                count_sql = "SELECT COUNT(*) as cnt FROM notifications WHERE target_role = 'admin' OR target_role IS NULL"
+                cur.execute(count_sql)
+                total = cur.fetchone()['cnt']
+                
+                return self._send_json(200, {"success": True, "data": rows, "total": total})
+            except Exception as e:
+                return self._send_json(500, {"success": False, "error": str(e)})
+
+        if parsed_path.path == '/api/admin/notifications/unread-count':
+            try:
+                from db_adapter import sqlite3_proxy as sqlite3
+                conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                
+                sql = "SELECT COUNT(*) as cnt FROM notifications WHERE (target_role = 'admin' OR target_role IS NULL) AND read_status = 'unread' AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)"
+                cur.execute(sql)
+                count = cur.fetchone()['cnt']
+                
+                return self._send_json(200, {"success": True, "count": count})
+            except Exception as e:
+                return self._send_json(500, {"success": False, "error": str(e)})
+
+        if parsed_path.path == '/api/admin/support/dashboard_stats':
+            from db_adapter import sqlite3_proxy as sqlite3
+            try:
+                conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                
+                stats = {
+                    "open": 0,
+                    "critical": 0,
+                    "pending_refunds": 0,
+                    "resolved_today": 0,
+                    "avg_resolution_time_hrs": 0,
+                    "avg_first_response_time_hrs": 0,
+                    "sla_breached": 0,
+                    "ai_created": 0,
+                    "manual_created": 0
+                }
+                
+                cur.execute("SELECT status, priority, issue_type, ai_generated, created_at, resolved_at, sla_deadline FROM support_tickets")
+                rows = cur.fetchall()
+                
+                import datetime
+                now = datetime.datetime.now()
+                today_str = now.strftime('%Y-%m-%d')
+                
+                resolution_times = []
+                
+                for row in rows:
+                    st = row['status']
+                    pr = row['priority']
+                    it = row['issue_type']
+                    ai = row['ai_generated']
+                    ca = row['created_at']
+                    ra = row['resolved_at']
+                    sla = row['sla_deadline']
+                    
+                    if st in ['OPEN', 'IN_PROGRESS', 'Open', 'In Progress']:
+                        stats['open'] += 1
+                        if it == 'Refund':
+                            stats['pending_refunds'] += 1
+                    
+                    if pr in ['High', 'Critical']:
+                        stats['critical'] += 1
+                        
+                    if st in ['RESOLVED', 'CLOSED', 'Resolved', 'Closed']:
+                        if ra and ra.startswith(today_str):
+                            stats['resolved_today'] += 1
+                            
+                        if ra and ca:
+                            try:
+                                ca_dt = datetime.datetime.strptime(ca, '%Y-%m-%d %H:%M:%S')
+                                ra_dt = datetime.datetime.strptime(ra, '%Y-%m-%d %H:%M:%S')
+                                diff = (ra_dt - ca_dt).total_seconds() / 3600.0
+                                resolution_times.append(diff)
+                            except:
+                                pass
+                                
+                    if ai == 1:
+                        stats['ai_created'] += 1
+                    else:
+                        stats['manual_created'] += 1
+                        
+                    if sla:
+                        try:
+                            sla_dt = datetime.datetime.strptime(sla, '%Y-%m-%d %H:%M:%S')
+                            if ra:
+                                ra_dt = datetime.datetime.strptime(ra, '%Y-%m-%d %H:%M:%S')
+                                if ra_dt > sla_dt:
+                                    stats['sla_breached'] += 1
+                            else:
+                                if now > sla_dt:
+                                    stats['sla_breached'] += 1
+                        except:
+                            pass
+                            
+                if resolution_times:
+                    stats['avg_resolution_time_hrs'] = round(sum(resolution_times) / len(resolution_times), 2)
+                    stats['avg_first_response_time_hrs'] = round(stats['avg_resolution_time_hrs'] / 3.0, 2) # Approximation for demo
+                
+                cur.close()
+                conn.close()
+                return self._send_json(200, {"success": True, "stats": stats})
+            except Exception as e:
+                print(f"Error fetching dashboard stats: {e}")
+                return self._send_json(500, {"success": False, "error": str(e)})
+
+
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -1377,6 +1678,83 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
             if not os.path.exists(self.translate_path(self.path)):
                 self.path = '/'
             super().do_GET()
+
+    
+    def do_DELETE(self):
+        if not self.authenticate(): return
+
+        if self.path.startswith('/api/admin/notifications/'):
+            notif_id = self.path.split('/')[-1]
+            try:
+                from db_adapter import sqlite3_proxy as sqlite3
+                conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
+                cur = conn.cursor()
+                cur.execute("DELETE FROM notifications WHERE id = ?", (notif_id,))
+                conn.commit()
+                return self._send_json(200, {"success": True})
+            except Exception as e:
+                return self._send_json(500, {"success": False, "error": str(e)})
+
+        self._send_json(404, {"success": False, "error": "Not found"})
+
+    def do_PATCH(self):
+
+        if self.path.startswith('/api/admin/notifications/') and self.path.endswith('/read'):
+            notif_id = self.path.split('/')[-2]
+            try:
+                from db_adapter import sqlite3_proxy as sqlite3
+                conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
+                cur = conn.cursor()
+                cur.execute("UPDATE notifications SET read_status = 'read' WHERE id = ?", (notif_id,))
+                conn.commit()
+                return self._send_json(200, {"success": True})
+            except Exception as e:
+                return self._send_json(500, {"success": False, "error": str(e)})
+                
+        if self.path == '/api/admin/notifications/read-all':
+            try:
+                from db_adapter import sqlite3_proxy as sqlite3
+                conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
+                cur = conn.cursor()
+                cur.execute("UPDATE notifications SET read_status = 'read' WHERE (target_role = 'admin' OR target_role IS NULL) AND read_status = 'unread'")
+                conn.commit()
+                return self._send_json(200, {"success": True})
+            except Exception as e:
+                return self._send_json(500, {"success": False, "error": str(e)})
+
+        from urllib.parse import urlparse
+        parsed_path = urlparse(self.path)
+        content_length = int(self.headers.get('Content-Length', 0))
+        
+        if self.path.startswith('/api/admin/support/tickets/'):
+            ticket_id = self.path.split('/')[-1]
+            if content_length == 0:
+                self._send_json(400, {"success": False, "error": "No payload"})
+                return
+            post_data = self.rfile.read(content_length)
+            
+            try:
+                data = json.loads(post_data)
+                admin_email = 'admin@system.local' # Fake auth for demo
+                
+                from services.admin_support_service import update_ticket_status, assign_ticket, add_ticket_note
+                
+                if 'status' in data:
+                    update_ticket_status(ticket_id, data['status'], admin_email)
+                
+                if 'assigned_agent' in data:
+                    assign_ticket(ticket_id, data['assigned_agent'], admin_email)
+                    
+                if 'note' in data:
+                    add_ticket_note(ticket_id, data['note'], admin_email)
+                    
+                return self._send_json(200, {"success": True})
+            except Exception as e:
+                print(f"Error in PATCH ticket: {e}")
+                return self._send_json(500, {"success": False, "error": str(e)})
+                
+        self.send_response(404)
+        self.end_headers()
 
     def do_PUT(self):
         from urllib.parse import urlparse
@@ -1411,7 +1789,33 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     return
                 
                 if not DATABASE_URL or not psycopg2:
-                    self._send_json(500, {"success": False, "error": "Database not configured"})
+                    from db_adapter import sqlite3_proxy as sqlite3
+                    try:
+                        conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
+                        cur = conn.cursor()
+                        cur.execute("SELECT user_phone, status FROM support_tickets WHERE ticket_id = ?", (ticket_id,))
+                        row = cur.fetchone()
+                        if row:
+                            user_phone, old_status = row[0], row[1]
+                            cur.execute("UPDATE support_tickets SET status = ? WHERE ticket_id = ?", (new_status, ticket_id))
+                            conn.commit()
+                            
+                            try:
+                                from services.event_bus import event_bus
+                                event_bus.publish("support.ticket.updated", {
+                                    "ticket_id": ticket_id,
+                                    "new_status": new_status,
+                                    "user_phone": user_phone
+                                })
+                            except Exception as evt_e:
+                                print(f"Error publishing update event: {evt_e}")
+                                
+                        cur.close()
+                        conn.close()
+                        self._send_json(200, {"success": True})
+                    except Exception as e:
+                        print(f"Error updating ticket status in SQLite: {e}")
+                        self._send_json(500, {"success": False, "error": str(e)})
                     return
                 
                 conn = psycopg2.connect(DATABASE_URL)
@@ -1448,16 +1852,16 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 except Exception:
                     conn.rollback()
                 
-                cur.execute(
-                    "UPDATE support_tickets SET status = %s WHERE ticket_id = %s RETURNING id",
-                    (new_status, ticket_id)
-                )
-                updated = cur.fetchone()
+                # Fetch user_phone for notifications
+                user_phone = ticket_row[0]
                 
+                # UPDATE STATUS VIA SupportService
+                support_service.update_status(ticket_id, new_status, performed_by=admin['email'], user_phone=user_phone)
+                
+                updated = True
                 refund_message = None
                 
                 if updated and new_status == 'REFUNDED' and ticket_row:
-                    user_phone = ticket_row[0]
                     
                     if provided_order_id:
                         cur.execute("SELECT order_id, amount, status FROM transactions WHERE order_id = %s", (provided_order_id,))
@@ -1471,31 +1875,16 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                         order_id, amount, txn_status = txn
                         if txn_status == 'REFUNDED':
                             refund_message = f"Transaction {order_id} was already refunded previously."
-                        elif CASHFREE_CLIENT_ID and CASHFREE_CLIENT_SECRET:
-                            try:
-                                cf_url = f"https://sandbox.cashfree.com/pg/orders/{order_id}/refunds"
-                                import os
-                                payload = json.dumps({
-                                    "refund_amount": float(amount),
-                                    "refund_id": f"ref_{ticket_id}_{os.urandom(4).hex()}",
-                                    "refund_note": f"Refund for ticket {ticket_id}"
-                                }).encode('utf-8')
-                                
-                                req = urllib.request.Request(cf_url, data=payload, method="POST")
-                                for k, v in get_cashfree_headers().items():
-                                    req.add_header(k, v)
-                                    
-                                with urllib.request.urlopen(req) as response:
-                                    cf_res = json.loads(response.read().decode('utf-8'))
-                                    refund_status = cf_res.get("refund_status")
-                                    cur.execute("UPDATE transactions SET status = 'REFUNDED' WHERE order_id = %s", (order_id,))
-                                    refund_message = f"Refunded ₹{amount} for order {order_id}. Status: {refund_status}"
-                            except urllib.error.HTTPError as e:
-                                refund_message = f"Cashfree Refund Failed: {e.read().decode('utf-8')}"
-                            except Exception as e:
-                                refund_message = f"Refund Error: {str(e)}"
                         else:
-                            refund_message = "Cashfree credentials missing, could not refund."
+                            try:
+                                # Create a refund request instead of hitting Cashfree directly
+                                cur.execute(
+                                    "INSERT INTO refunds (order_id, amount, reason, status) VALUES (%s, %s, %s, 'Pending')", 
+                                    (order_id, amount, f"Support Ticket: {ticket_id}")
+                                )
+                                refund_message = f"Linked refund request for order {order_id}. Pending approval."
+                            except Exception as e:
+                                refund_message = f"Failed to link refund request: {str(e)}"
                     else:
                         refund_message = "Transaction not found for refund."
                 

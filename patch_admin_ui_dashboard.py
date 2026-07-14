@@ -1,85 +1,11 @@
+import re
 
-        
+with open('/Users/pramod2.nayak/MOMO-ADMIN/script_1.js', 'r') as f:
+    content = f.read()
+
+new_code = """
         let allTickets = [];
         let expandedTicketId = null;
-        let expandedTicketDetails = null; // Store fetched details
-
-        function fetchTicketDetails(ticketId) {
-            fetch('/api/admin/support/tickets/' + ticketId + '/details')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        expandedTicketDetails = data.data;
-                        renderTicketsUI();
-                    } else {
-                        alert("Failed to fetch details: " + data.error);
-                    }
-                })
-                .catch(err => alert("Error: " + err.message));
-        }
-
-        function toggleTicketRow(ticketId) {
-            if (expandedTicketId === ticketId) {
-                expandedTicketId = null;
-                expandedTicketDetails = null;
-                renderTicketsUI();
-            } else {
-                expandedTicketId = ticketId;
-                expandedTicketDetails = null; // Loading state
-                renderTicketsUI();
-                fetchTicketDetails(ticketId);
-            }
-        }
-        
-        function submitTicketNote(ticketId) {
-            const noteInput = document.getElementById('internal-note-input');
-            if(!noteInput || !noteInput.value.trim()) return;
-            
-            fetch('/api/admin/support/tickets/' + ticketId, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note: noteInput.value.trim() })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    fetchTicketDetails(ticketId); // Refresh details
-                } else {
-                    alert("Failed to add note: " + data.error);
-                }
-            })
-            .catch(err => alert("Error: " + err.message));
-        }
-        
-        function processTicketPATCH(ticketId, payload) {
-            fetch('/api/admin/support/tickets/' + ticketId, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    fetchTickets();
-                } else {
-                    alert("Failed: " + data.error);
-                }
-            })
-            .catch(err => alert("Error: " + err.message));
-        }
-        
-        function updateTicketStatusPATCH(ticketId, newStatus) {
-            if(newStatus === 'REFUNDED') {
-                showModal(
-                    "⚠️ Confirm Critical Action", 
-                    "Are you sure you want to refund this ticket?\n\nThis will instantly return the money to the customer's bank account and CANNOT be undone!", 
-                    true, 
-                    `processTicketPATCH('${ticketId}', {status: '${newStatus}'})`
-                );
-                return;
-            }
-            processTicketPATCH(ticketId, {status: newStatus});
-        }
         
         let dashboardStats = {
             open: 0, critical: 0, pending_refunds: 0, resolved_today: 0,
@@ -90,7 +16,7 @@
         let currentFilters = {
             page: 1, limit: 10, ticket_id: '', mobile: '', service: '', operator: '',
             status: 'All', priority: 'All', ticket_type: 'All', assigned_agent: 'All',
-            refund_status: 'All', date_range: '', created_by: 'All'
+            refund_status: 'All', date_range: ''
         };
         
         let paginationInfo = { total: 0, page: 1, limit: 10, pages: 1 };
@@ -188,7 +114,7 @@
             if(newStatus === 'REFUNDED') {
                 showModal(
                     "⚠️ Confirm Critical Action", 
-                    "Are you sure you want to refund this ticket?\n\nThis will instantly return the money to the customer's bank account and CANNOT be undone!", 
+                    "Are you sure you want to refund this ticket?\\n\\nThis will instantly return the money to the customer's bank account and CANNOT be undone!", 
                     true, 
                     `processTicketStatusUpdate('${ticketId}', '${newStatus}')`
                 );
@@ -202,7 +128,10 @@
             alert("Copied Ticket ID: " + id);
         }
 
-        
+        function toggleTicketRow(ticketId) {
+            expandedTicketId = (expandedTicketId === ticketId) ? null : ticketId;
+            renderTicketsUI();
+        }
 
         function getTicketBadge(status) {
             const base = "px-3 py-1 rounded-full text-xs font-bold border ";
@@ -299,14 +228,6 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 mb-1">Created By</label>
-                        <select class="w-32 bg-slate-900 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-blue-500" onchange="updateFilter('created_by', this.value)">
-                            <option value="All" ${currentFilters.created_by==='All'?'selected':''}>All</option>
-                            <option value="AI" ${currentFilters.created_by==='AI'?'selected':''}>AI</option>
-                            <option value="Manual" ${currentFilters.created_by==='Manual'?'selected':''}>Manual</option>
-                        </select>
-                    </div>
-                    <div>
                         <label class="block text-xs font-semibold text-slate-400 mb-1">Date Range</label>
                         <select class="w-32 bg-slate-900 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-blue-500" onchange="updateFilter('date_range', this.value)">
                             <option value="" ${currentFilters.date_range===''?'selected':''}>All Time</option>
@@ -316,7 +237,7 @@
                         </select>
                     </div>
                     <div class="ml-auto flex gap-2">
-                        <button onclick="currentFilters={page:1, limit:10, ticket_id:'', mobile:'', service:'', operator:'', status:'All', priority:'All', ticket_type:'All', assigned_agent:'All', refund_status:'All', date_range:'', created_by:'All'}; fetchTickets();" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded text-sm transition border border-white/10">Clear Filters</button>
+                        <button onclick="currentFilters={page:1, limit:10, ticket_id:'', mobile:'', service:'', operator:'', status:'All', priority:'All', ticket_type:'All', assigned_agent:'All', refund_status:'All', date_range:''}; fetchTickets();" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded text-sm transition border border-white/10">Clear Filters</button>
                     </div>
                 </div>
             `;
@@ -404,113 +325,65 @@
                         </tr>
                     `;
 
-                    
                     if (isExpanded) {
-                        if (!expandedTicketDetails) {
-                            html += `
-                                <tr class="bg-black/30 border-b border-white/5">
-                                    <td colspan="6" class="p-8 text-center text-slate-400">
-                                        <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-blue-500"></i>
-                                        Loading detailed timeline and conversation...
-                                    </td>
-                                </tr>
-                            `;
-                        } else {
-                            const details = expandedTicketDetails;
-                            let timelineHtml = details.timeline.map(e => `
-                                <div class="relative">
-                                    <div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-slate-900"></div>
-                                    <div class="text-xs text-slate-400">${new Date(e.created_at).toLocaleString()}</div>
-                                    <div class="text-sm font-medium text-white">${e.event_type}</div>
-                                    <div class="text-xs text-slate-300 mt-1">${e.description}</div>
-                                    <div class="text-[10px] text-slate-500 mt-0.5">By: ${e.actor}</div>
-                                </div>
-                            `).join('');
-                            
-                            let convoHtml = details.conversation.map(m => `
-                                <div class="mb-3 ${m.sender==='user'?'ml-auto text-right':'mr-auto text-left'} max-w-[80%]">
-                                    <div class="text-[10px] text-slate-500 mb-1">${m.sender === 'user' ? 'Customer' : 'AI Assistant'}</div>
-                                    <div class="p-2 rounded-lg text-sm ${m.sender==='user'?'bg-blue-600 text-white':'bg-white/10 text-slate-300'}">
-                                        ${m.message}
-                                    </div>
-                                </div>
-                            `).join('') || '<div class="text-slate-500 text-sm">No conversation history.</div>';
-                            
-                            let notesHtml = details.notes.map(n => `
-                                <div class="mb-2 p-2 rounded bg-yellow-500/10 border border-yellow-500/20 text-sm">
-                                    <div class="text-yellow-200">${n.note}</div>
-                                    <div class="text-[10px] text-yellow-500/50 mt-1">${n.created_by} - ${new Date(n.created_at).toLocaleString()}</div>
-                                </div>
-                            `).join('') || '<div class="text-slate-500 text-sm">No internal notes yet.</div>';
-                            
-                            let notificationHtml = details.notifications.map(n => `
-                                <div class="text-xs text-slate-400 mb-1">
-                                    ${new Date(n.created_at).toLocaleString()} - <span class="${n.status==='DELIVERED'?'text-emerald-400':'text-red-400'}">${n.status}</span>
-                                    <div>${n.message}</div>
-                                </div>
-                            `).join('') || '<div class="text-slate-500 text-xs">No notifications sent for this ticket.</div>';
-
-                            html += `
-                                <tr class="bg-black/30 border-b border-white/5">
-                                    <td colspan="6" class="p-6">
-                                        <div class="grid grid-cols-12 gap-6">
-                                            <!-- Column 1: Details & Convo -->
-                                            <div class="col-span-5">
-                                                <h4 class="text-sm font-bold text-white mb-3">Ticket Details</h4>
-                                                <div class="p-3 bg-white/5 border border-white/10 rounded-lg text-sm space-y-2 mb-4">
-                                                    <div class="flex justify-between"><span class="text-slate-400">Target Number:</span> <span class="text-white">${details.ticket.target_number || 'N/A'}</span></div>
-                                                    <div class="flex justify-between"><span class="text-slate-400">Order ID:</span> <span class="font-mono text-blue-400">${details.ticket.order_id || 'N/A'}</span></div>
-                                                    <div class="flex justify-between"><span class="text-slate-400">Assigned Agent:</span> <span class="text-white">${details.ticket.assigned_agent || 'Unassigned'}</span></div>
-                                                    ${details.refund_status ? `<div class="flex justify-between mt-2 pt-2 border-t border-white/10"><span class="text-emerald-400">Refund Status:</span> <span class="text-emerald-400 font-bold">${details.refund_status.status}</span></div>` : ''}
-                                                </div>
-                                                
-                                                <h4 class="text-sm font-bold text-white mb-3">AI Conversation</h4>
-                                                <div class="p-4 bg-white/5 border border-white/10 rounded-lg h-64 overflow-y-auto flex flex-col">
-                                                    ${convoHtml}
-                                                </div>
+                        html += `
+                            <tr class="bg-black/30 border-b border-white/5">
+                                <td colspan="6" class="p-6">
+                                    <div class="grid grid-cols-2 gap-8">
+                                        <div>
+                                            <h4 class="text-sm font-bold text-white mb-3">Ticket Details</h4>
+                                            <div class="space-y-2 text-sm">
+                                                <div class="flex justify-between"><span class="text-slate-400">Target Number:</span> <span class="text-white">${ticket.target_number || 'N/A'}</span></div>
+                                                <div class="flex justify-between"><span class="text-slate-400">Order ID:</span> <span class="font-mono text-blue-400">${ticket.order_id || 'N/A'}</span></div>
+                                                <div class="flex justify-between"><span class="text-slate-400">Assigned Agent:</span> <span class="text-white">${ticket.assigned_agent || 'Unassigned'}</span></div>
                                             </div>
-                                            
-                                            <!-- Column 2: Timeline -->
-                                            <div class="col-span-4">
-                                                <h4 class="text-sm font-bold text-white mb-3">Timeline Events</h4>
-                                                <div class="p-4 bg-white/5 border border-white/10 rounded-lg h-[408px] overflow-y-auto">
-                                                    <div class="relative pl-4 border-l border-slate-700 space-y-4">
-                                                        ${timelineHtml}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Column 3: Notes & Actions -->
-                                            <div class="col-span-3">
-                                                <h4 class="text-sm font-bold text-white mb-3">Internal Notes</h4>
-                                                <div class="p-3 bg-white/5 border border-white/10 rounded-lg h-40 overflow-y-auto mb-3">
-                                                    ${notesHtml}
-                                                </div>
-                                                <div class="mb-4">
-                                                    <textarea id="internal-note-input" class="w-full bg-slate-900 border border-white/10 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-blue-500 placeholder-slate-600 mb-2" rows="2" placeholder="Add a note..."></textarea>
-                                                    <button onclick="submitTicketNote('${ticket.ticket_id}')" class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">Save Note</button>
-                                                </div>
-                                                
-                                                <h4 class="text-sm font-bold text-white mb-3">Notifications Sent</h4>
-                                                <div class="p-3 bg-white/5 border border-white/10 rounded-lg h-24 overflow-y-auto mb-4">
-                                                    ${notificationHtml}
-                                                </div>
-                                                
-                                                <div class="flex flex-col gap-2">
-                                                    <select class="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" onchange="processTicketPATCH('${ticket.ticket_id}', {assigned_agent: this.value})">
-                                                        <option value="">Assign Agent...</option>
-                                                        <option value="admin@system.local">admin@system.local</option>
-                                                        <option value="support@system.local">support@system.local</option>
-                                                    </select>
+                                            <div class="mt-4">
+                                                <h4 class="text-sm font-bold text-white mb-2">Description / AI Summary</h4>
+                                                <div class="p-3 bg-white/5 border border-white/10 rounded-lg text-sm text-slate-300 leading-relaxed max-h-40 overflow-y-auto">
+                                                    ${ticket.description || 'No description provided.'}
+                                                    ${ticket.ai_summary ? `<div class="mt-2 pt-2 border-t border-white/10"><strong class="text-purple-400">AI Summary:</strong> ${ticket.ai_summary}</div>` : ''}
                                                 </div>
                                             </div>
                                         </div>
-                                    </td>
-                                </tr>
-                            `;
-                        }
+                                        <div>
+                                            <h4 class="text-sm font-bold text-white mb-3 flex justify-between items-center">
+                                                <span>Timeline / History</span>
+                                                <button class="text-xs px-2 py-1 bg-white/10 hover:bg-white/20 rounded transition">Add Note</button>
+                                            </h4>
+                                            <div class="p-4 bg-white/5 border border-white/10 rounded-lg max-h-48 overflow-y-auto">
+                                                <div class="relative pl-4 border-l border-slate-700 space-y-4">
+                                                    <div class="relative">
+                                                        <div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-slate-900"></div>
+                                                        <div class="text-xs text-slate-400">${ticket.created_at ? new Date(ticket.created_at).toLocaleString() : 'N/A'}</div>
+                                                        <div class="text-sm font-medium text-white">Ticket Created</div>
+                                                        <div class="text-xs text-slate-500">System</div>
+                                                    </div>
+                                                    ${ticket.status === 'REFUNDED' ? `
+                                                    <div class="relative">
+                                                        <div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-slate-900"></div>
+                                                        <div class="text-xs text-slate-400">Later</div>
+                                                        <div class="text-sm font-medium text-emerald-400">Refund Processed</div>
+                                                        <div class="text-xs text-slate-500">Admin Action</div>
+                                                    </div>` : ''}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-4 flex gap-2">
+                                                <select class="flex-1 bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                                                    <option value="">Update Status...</option>
+                                                    <option value="OPEN">Open</option>
+                                                    <option value="IN_PROGRESS">In Progress</option>
+                                                    <option value="RESOLVED">Resolved</option>
+                                                    <option value="CLOSED">Closed</option>
+                                                </select>
+                                                <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition shadow-[0_0_15px_rgba(37,99,235,0.3)]">Update</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
                     }
-
                 });
             }
 
@@ -525,202 +398,19 @@
             root.innerHTML = html;
             if(window.lucide) lucide.createIcons();
         }
+"""
 
+start_str = "let allTickets = [];"
+end_str = "lucide.createIcons();\n        }"
 
-        window.addEventListener('admin-unlocked', fetchTickets);
-        setInterval(() => {
-            if (sessionStorage.getItem('admin-token')) fetchTickets();
-        }, 10000);
-    
-// ----------------------------------------------------
-// NOTIFICATION CENTER LOGIC
-// ----------------------------------------------------
+start_idx = content.find(start_str)
+end_idx = content.find(end_str)
 
-let notificationPollInterval = null;
-
-function initNotificationCenter() {
-    const bellBtn = document.getElementById('notification-bell-btn');
-    const dropdown = document.getElementById('notification-dropdown');
-    const readAllBtn = document.getElementById('notification-read-all-btn');
-    
-    if(!bellBtn) return;
-    
-    bellBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isHidden = dropdown.classList.contains('hidden');
-        if(isHidden) {
-            dropdown.classList.remove('hidden');
-            fetchNotifications();
-        } else {
-            dropdown.classList.add('hidden');
-        }
-    });
-    
-    document.addEventListener('click', (e) => {
-        if(!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
-            dropdown.classList.add('hidden');
-        }
-    });
-    
-    if(readAllBtn) {
-        readAllBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            markAllNotificationsRead();
-        });
-    }
-    
-    // Start polling every 30s
-    pollUnreadCount();
-    notificationPollInterval = setInterval(pollUnreadCount, 30000);
-}
-
-function pollUnreadCount() {
-    fetch('/api/admin/notifications/unread-count')
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                updateNotificationBadge(data.count);
-            }
-        })
-        .catch(console.error);
-}
-
-function updateNotificationBadge(count) {
-    const badge = document.getElementById('notification-badge');
-    if(!badge) return;
-    if(count > 0) {
-        badge.innerText = count > 99 ? '99+' : count;
-        badge.classList.remove('hidden');
-    } else {
-        badge.classList.add('hidden');
-    }
-}
-
-function fetchNotifications() {
-    const listEl = document.getElementById('notification-list');
-    const loadingEl = document.getElementById('notification-loading');
-    const emptyEl = document.getElementById('notification-empty');
-    
-    if(!listEl) return;
-    
-    // Clean old items
-    Array.from(listEl.children).forEach(child => {
-        if(child.id !== 'notification-loading' && child.id !== 'notification-empty') {
-            child.remove();
-        }
-    });
-    
-    loadingEl.classList.remove('hidden');
-    emptyEl.classList.add('hidden');
-    
-    fetch('/api/admin/notifications?limit=20')
-        .then(res => res.json())
-        .then(data => {
-            loadingEl.classList.add('hidden');
-            if(data.success && data.data && data.data.length > 0) {
-                renderNotifications(data.data);
-            } else {
-                emptyEl.classList.remove('hidden');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            loadingEl.classList.add('hidden');
-            emptyEl.classList.remove('hidden');
-        });
-}
-
-function renderNotifications(notifs) {
-    const listEl = document.getElementById('notification-list');
-    notifs.forEach(notif => {
-        const item = document.createElement('div');
-        item.className = `p-4 hover:bg-white/5 transition cursor-pointer flex gap-4 ${notif.read_status === 'unread' ? 'bg-primary/5' : ''}`;
-        
-        let iconHtml = '<div class="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center shrink-0"><i data-lucide="bell" class="w-5 h-5 text-slate-300"></i></div>';
-        
-        if(notif.category === 'Support') iconHtml = '<div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0"><i data-lucide="headphones" class="w-5 h-5 text-blue-400"></i></div>';
-        else if(notif.category === 'Payments') iconHtml = '<div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0"><i data-lucide="credit-card" class="w-5 h-5 text-emerald-400"></i></div>';
-        else if(notif.category === 'Security') iconHtml = '<div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0"><i data-lucide="shield-alert" class="w-5 h-5 text-red-400"></i></div>';
-        else if(notif.category === 'Refund') iconHtml = '<div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0"><i data-lucide="refresh-cw" class="w-5 h-5 text-amber-400"></i></div>';
-        
-        const date = new Date(notif.created_at).toLocaleString();
-        
-        item.innerHTML = `
-            ${iconHtml}
-            <div class="flex-1">
-                <div class="flex justify-between items-start mb-1">
-                    <h4 class="text-sm font-semibold text-white ${notif.read_status === 'unread' ? '' : 'opacity-80'}">${notif.title}</h4>
-                    <span class="text-[10px] text-slate-500 whitespace-nowrap ml-2">${date}</span>
-                </div>
-                <p class="text-xs text-slate-400 line-clamp-2">${notif.message}</p>
-            </div>
-        `;
-        
-        item.addEventListener('click', () => {
-            if(notif.read_status === 'unread') {
-                markNotificationRead(notif.id);
-            }
-            if(notif.action_url) {
-                console.log("Navigating to: " + notif.action_url);
-                document.getElementById('notification-dropdown').classList.add('hidden');
-                
-                // Very basic routing based on action_url for demo purposes
-                if (notif.action_url.includes('support')) switchTab('tab-support');
-                else if (notif.action_url.includes('payments')) switchTab('tab-payments');
-                else if (notif.action_url.includes('refunds')) switchTab('tab-refunds');
-            }
-        });
-        
-        listEl.appendChild(item);
-    });
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
-}
-
-function markNotificationRead(id) {
-    fetch('/api/admin/notifications/' + id + '/read', { method: 'PATCH' })
-        .then(() => {
-            pollUnreadCount();
-            fetchNotifications();
-        })
-        .catch(console.error);
-}
-
-function markAllNotificationsRead() {
-    fetch('/api/admin/notifications/read-all', { method: 'PATCH' })
-        .then(() => {
-            pollUnreadCount();
-            fetchNotifications();
-        })
-        .catch(console.error);
-}
-
-// Call on load
-document.addEventListener('DOMContentLoaded', () => {
-    initNotificationCenter();
-});
-
-
-// Notification Preferences
-document.addEventListener('DOMContentLoaded', () => {
-    const savePrefsBtn = document.getElementById('save-notification-prefs');
-    const savePrefsMsg = document.getElementById('save-prefs-msg');
-    
-    if (savePrefsBtn) {
-        savePrefsBtn.addEventListener('click', () => {
-            const originalText = savePrefsBtn.innerText;
-            savePrefsBtn.innerText = 'Saving...';
-            
-            // Mock API call
-            setTimeout(() => {
-                savePrefsBtn.innerText = originalText;
-                savePrefsMsg.classList.remove('hidden');
-                
-                setTimeout(() => {
-                    savePrefsMsg.classList.add('hidden');
-                }, 3000);
-            }, 800);
-        });
-    }
-});
+if start_idx != -1 and end_idx != -1:
+    end_idx += len(end_str)
+    new_content = content[:start_idx] + new_code + content[end_idx:]
+    with open('/Users/pramod2.nayak/MOMO-ADMIN/script_1.js', 'w') as f:
+        f.write(new_content)
+    print("Successfully patched script_1.js")
+else:
+    print("Could not find start/end markers in script_1.js")

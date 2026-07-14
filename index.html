@@ -261,7 +261,7 @@
 
         <!-- Main Content Area -->
         <main class="flex-1 overflow-y-auto bg-dark p-8 w-full max-w-full">
-            <header class="flex justify-between items-center mb-8 pb-4 border-b border-white/10">
+            <header class="flex justify-between items-center mb-8 pb-4 border-b border-white/10 relative">
                 <div class="flex items-center gap-4">
                     <button id="mobile-menu-btn" class="md:hidden text-slate-300 hover:text-white transition">
                         <i data-lucide="menu" class="w-6 h-6"></i>
@@ -269,6 +269,44 @@
                     <h1 id="page-title" class="text-2xl font-bold">Dashboard Overview</h1>
                 </div>
                 <div class="flex items-center gap-4">
+                    <!-- Notification Bell -->
+                    <div class="relative inline-block text-left" id="notification-center-container">
+                        <button type="button" class="relative p-2 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition outline-none" id="notification-bell-btn">
+                            <i data-lucide="bell" class="w-6 h-6"></i>
+                            <!-- Badge -->
+                            <span id="notification-badge" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1/4 -translate-y-1/4 hidden">
+                                0
+                            </span>
+                        </button>
+                        
+                        <!-- Dropdown Panel -->
+                        <div id="notification-dropdown" class="origin-top-right absolute right-0 mt-2 w-80 sm:w-96 rounded-xl shadow-2xl bg-[#1a1a24] border border-white/10 hidden z-[100] flex flex-col max-h-[80vh] overflow-hidden">
+                            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/20">
+                                <h3 class="text-lg font-bold text-white">Notifications</h3>
+                                <button id="notification-read-all-btn" class="text-xs text-accent hover:text-white transition">Mark all as read</button>
+                            </div>
+                            
+                            <!-- List -->
+                            <div id="notification-list" class="flex-1 overflow-y-auto divide-y divide-white/5">
+                                <!-- Loading State -->
+                                <div id="notification-loading" class="p-8 text-center text-slate-400 hidden">
+                                    <i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto mb-2"></i>
+                                    <p>Loading...</p>
+                                </div>
+                                <!-- Empty State -->
+                                <div id="notification-empty" class="p-8 text-center text-slate-500">
+                                    <i data-lucide="bell-off" class="w-10 h-10 mx-auto mb-3 opacity-50"></i>
+                                    <p>No new notifications.</p>
+                                </div>
+                                <!-- Items injected via JS -->
+                            </div>
+                            
+                            <div class="p-3 border-t border-white/10 bg-black/20 text-center">
+                                <button class="text-sm text-slate-400 hover:text-white transition">View Notification History</button>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <span class="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/50 rounded-full text-xs font-bold flex items-center gap-2 hidden sm:flex">
                         <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
                         LIVE
@@ -915,7 +953,7 @@
 
             <!-- TAB 4: SETTINGS -->
             <div id="tab-settings" class="tab-content">
-                <div class="glass-card rounded-xl p-8 max-w-2xl">
+                <div class="glass-card rounded-xl p-8 max-w-2xl mb-8">
                     <h2 class="text-xl font-bold mb-6">AI Assistant Configuration</h2>
                     
                     <div class="mb-6">
@@ -929,6 +967,35 @@
                             <i data-lucide="check-circle" class="w-4 h-4"></i> Successfully updated!
                         </p>
                     </div>
+                </div>
+
+                <div class="glass-card rounded-xl p-8 max-w-2xl">
+                    <h2 class="text-xl font-bold mb-6">Global Notification Preferences</h2>
+                    <p class="text-slate-500 text-sm mb-6">Control what notifications are dispatched across the platform.</p>
+                    
+                    <div class="space-y-4 mb-8">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="pref-support" class="w-5 h-5 accent-primary" checked>
+                            <span class="text-slate-300">Support Updates (Tickets, Assignments)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="pref-payments" class="w-5 h-5 accent-primary" checked>
+                            <span class="text-slate-300">Payment Alerts (Failures, Thresholds)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="pref-refunds" class="w-5 h-5 accent-primary" checked>
+                            <span class="text-slate-300">Refund Processing (Initiations, Confirmations)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="pref-security" class="w-5 h-5 accent-primary" checked>
+                            <span class="text-slate-300">Security & Access (Failed Logins, API Errors)</span>
+                        </label>
+                    </div>
+                    
+                    <button id="save-notification-prefs" class="primary-glow-btn px-6 py-3">Update Preferences</button>
+                    <p id="save-prefs-msg" class="text-green-400 mt-3 text-sm hidden flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Preferences saved!
+                    </p>
                 </div>
             </div>
 
@@ -1338,7 +1405,7 @@
                     )}
 
                     <div className="p-6 border-b border-white/5 flex justify-between items-center bg-surface-light">
-                        <h2 className="text-lg font-bold">Support Center</h2>
+                        <h2 className="text-lg font-bold">Support Center ESMS</h2>
                         <button onClick={fetchTickets} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition border border-white/10 flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -1346,6 +1413,38 @@
                             </svg>
                             Refresh Data
                         </button>
+                    </div>
+                    
+                    {/* KPI Dashboard */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 p-6 bg-black/20 border-b border-white/5">
+                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                            <div className="text-xs text-slate-400 font-semibold mb-1">OPEN TICKETS</div>
+                            <div className="text-2xl font-bold text-white">{tickets.filter(t => t.status === 'OPEN').length}</div>
+                        </div>
+                        <div className="bg-red-500/10 p-4 rounded-xl border border-red-500/20 text-center">
+                            <div className="text-xs text-red-400 font-semibold mb-1">CRITICAL</div>
+                            <div className="text-2xl font-bold text-red-100">{tickets.filter(t => t.priority === 'Critical' && t.status !== 'RESOLVED').length}</div>
+                        </div>
+                        <div className="bg-yellow-500/10 p-4 rounded-xl border border-yellow-500/20 text-center">
+                            <div className="text-xs text-yellow-400 font-semibold mb-1">PENDING REFUNDS</div>
+                            <div className="text-2xl font-bold text-yellow-100">{tickets.filter(t => t.refund_required && t.status !== 'REFUNDED').length}</div>
+                        </div>
+                        <div className="bg-green-500/10 p-4 rounded-xl border border-green-500/20 text-center">
+                            <div className="text-xs text-green-400 font-semibold mb-1">RESOLVED TODAY</div>
+                            <div className="text-2xl font-bold text-green-100">{tickets.filter(t => t.status === 'RESOLVED').length}</div>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                            <div className="text-xs text-slate-400 font-semibold mb-1">AVG RESOLUTION</div>
+                            <div className="text-2xl font-bold text-white">~2h</div>
+                        </div>
+                        <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20 text-center">
+                            <div className="text-xs text-blue-400 font-semibold mb-1">AI CREATED</div>
+                            <div className="text-2xl font-bold text-blue-100">{tickets.filter(t => t.ai_generated).length}</div>
+                        </div>
+                        <div className="bg-purple-500/10 p-4 rounded-xl border border-purple-500/20 text-center">
+                            <div className="text-xs text-purple-400 font-semibold mb-1">MANUAL CREATED</div>
+                            <div className="text-2xl font-bold text-purple-100">{tickets.filter(t => !t.ai_generated).length}</div>
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -1386,9 +1485,19 @@
                                             <td className="text-accent">{ticket.issue_type}</td>
                                             <td>{ticket.target_number || 'N/A'}</td>
                                             <td>
-                                                <button className="text-primary hover:text-white transition text-sm flex items-center gap-1">
-                                                    {expandedRow === ticket.id ? 'Hide Details' : 'View Details'}
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(ticket.ticket_id); showToast('Ticket ID copied to clipboard'); }} className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white" title="Copy Ticket ID">
+                                                        📋
+                                                    </button>
+                                                    {ticket.refund_required && ticket.status !== 'REFUNDED' && (
+                                                        <button onClick={(e) => { e.stopPropagation(); updateStatus(ticket.ticket_id, 'REFUNDED'); }} className="p-1 hover:bg-red-500/20 rounded text-yellow-500 hover:text-red-400" title="Create Refund">
+                                                            💰
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => setExpandedRow(expandedRow === ticket.id ? null : ticket.id)} className="p-1 hover:bg-white/10 rounded text-primary hover:text-white" title="View Details">
+                                                        👁
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                         {expandedRow === ticket.id && (
