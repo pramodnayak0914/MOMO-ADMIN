@@ -111,6 +111,22 @@ def update_ticket_status(ticket_id, new_status, admin_email):
         (ticket_id, 'STATUS_CHANGE', f"Status updated to {new_status}", admin_email)
     )
     
+    # Fetch user phone to send notification
+    cur.execute("SELECT user_phone FROM support_tickets WHERE ticket_id = ?", (ticket_id,))
+    ticket_row = cur.fetchone()
+    if ticket_row and ticket_row['user_phone']:
+        user_phone = ticket_row['user_phone']
+        title = f"Ticket Status Updated"
+        message = f"Your support ticket {ticket_id} has been updated to {new_status}."
+        notif_id = f"notif_{int(datetime.datetime.now().timestamp())}_{ticket_id}"
+        
+        # Insert into notifications
+        cur.execute(
+            """INSERT INTO notifications (id, target_user_phone, title, message, category, read_status, created_at) 
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (notif_id, user_phone, title, message, "ticket", "unread", now)
+        )
+        
     conn.commit()
     cur.close()
     conn.close()
