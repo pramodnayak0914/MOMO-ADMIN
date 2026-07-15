@@ -77,7 +77,7 @@ def add_ticket_note(ticket_id, note_text, admin_email):
     
     # Insert Timeline Event
     cur.execute(
-        "INSERT INTO support_ticket_events (ticket_id, event_type, description, actor) VALUES (?, ?, ?, ?)",
+        "INSERT INTO support_ticket_events (ticket_id, event_type, new_value, performed_by) VALUES (?, ?, ?, ?)",
         (ticket_id, 'NOTE_ADDED', f"Internal note added: {note_text[:50]}...", admin_email)
     )
     
@@ -107,7 +107,7 @@ def update_ticket_status(ticket_id, new_status, admin_email):
     
     # Insert Timeline Event
     cur.execute(
-        "INSERT INTO support_ticket_events (ticket_id, event_type, description, actor) VALUES (?, ?, ?, ?)",
+        "INSERT INTO support_ticket_events (ticket_id, event_type, new_value, performed_by) VALUES (?, ?, ?, ?)",
         (ticket_id, 'STATUS_CHANGE', f"Status updated to {new_status}", admin_email)
     )
     
@@ -122,9 +122,9 @@ def update_ticket_status(ticket_id, new_status, admin_email):
         
         # Insert into notifications
         cur.execute(
-            """INSERT INTO notifications (id, target_user_phone, title, message, category, read_status, created_at) 
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (notif_id, user_phone, title, message, "ticket", "unread", now)
+            """INSERT INTO notifications (target_user_phone, title, message, category, read_status, created_at) 
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (user_phone, title, message, "ticket", "unread", now)
         )
         
     conn.commit()
@@ -139,7 +139,7 @@ def assign_ticket(ticket_id, agent_email, admin_email):
     cur.execute("UPDATE support_tickets SET assigned_agent = ? WHERE ticket_id = ?", (agent_email, ticket_id))
     
     cur.execute(
-        "INSERT INTO support_ticket_events (ticket_id, event_type, description, actor) VALUES (?, ?, ?, ?)",
+        "INSERT INTO support_ticket_events (ticket_id, event_type, new_value, performed_by) VALUES (?, ?, ?, ?)",
         (ticket_id, 'AGENT_ASSIGNED', f"Assigned to {agent_email}", admin_email)
     )
     

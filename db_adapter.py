@@ -68,7 +68,7 @@ class PgConnection:
 class FakeSqlite:
     Error = Exception
     OperationalError = Exception
-    Row = dict
+    Row = real_sqlite3.Row
     
     def connect(self, db, check_same_thread=False):
         if not DATABASE_URL or not psycopg2:

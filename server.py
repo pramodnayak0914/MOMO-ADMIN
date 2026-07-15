@@ -1487,6 +1487,8 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                     }
                 })
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 print(f"Error fetching tickets from SQLite: {e}")
                 return self._send_json(500, {"success": False, "error": str(e)})
 
