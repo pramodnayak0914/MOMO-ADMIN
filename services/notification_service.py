@@ -9,7 +9,7 @@ except ImportError:
 from .notification_providers import EmailProvider, WhatsAppProvider
 
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
-SQLITE_DB = 'local_database.db'
+SQLITE_DB = '../MOMO-AI/local_database.db'
 
 class NotificationService:
     def __init__(self):
