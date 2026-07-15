@@ -1677,8 +1677,15 @@ class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Location', '/admin')
                 self.end_headers()
                 return
-            if not os.path.exists(self.translate_path(self.path)):
+            if self.path == '/admin':
                 self.path = '/'
+                super().do_GET()
+                return
+            if not os.path.exists(self.translate_path(self.path)):
+                self.send_response(302)
+                self.send_header('Location', '/admin')
+                self.end_headers()
+                return
             super().do_GET()
 
     
