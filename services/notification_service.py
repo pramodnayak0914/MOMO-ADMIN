@@ -18,32 +18,22 @@ class NotificationService:
         
     def _execute_db(self, query, params):
         """Helper to run a DB query against Postgres (if available) or SQLite."""
-        if DATABASE_URL and psycopg2:
-            try:
-                conn = psycopg2.connect(DATABASE_URL)
-                cur = conn.cursor()
-                # Replace SQLite '?' with Postgres '%s'
-                pg_query = query.replace('?', '%s')
-                cur.execute(pg_query, params)
-                conn.commit()
-                cur.close()
-                conn.close()
-                return True
-            except Exception as e:
-                print(f"[NotificationService] DB Error: {e}")
-                return False
-        else:
-            try:
-                conn = sqlite3.connect(SQLITE_DB, check_same_thread=False)
-                cur = conn.cursor()
-                cur.execute(query, params)
-                conn.commit()
-                cur.close()
-                conn.close()
-                return True
-            except Exception as e:
-                print(f"[NotificationService] SQLite Error: {e}")
-                return False
+        try:
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+            from db_adapter import sqlite3_proxy as sqlite3
+            
+            conn = sqlite3.connect('../MOMO-AI/local_database.db', check_same_thread=False)
+            cur = conn.cursor()
+            cur.execute(query, params)
+            conn.commit()
+            cur.close()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"[NotificationService] DB Error: {e}")
+            return False
 
     def _log_history(self, ticket_id, channel, provider, recipient, status, error=""):
         query = """

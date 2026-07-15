@@ -300,6 +300,13 @@ init_db()
 
 class AdminAPIHandler(http.server.SimpleHTTPRequestHandler):
 
+    def end_headers(self):
+        if self.path.endswith('.html') or self.path == '/' or self.path == '/admin':
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+        super().end_headers()
+
     def authenticate_admin(self, data):
         # Support both old JSON tokens and new Authorization Bearer tokens
         token = data.get('token')
