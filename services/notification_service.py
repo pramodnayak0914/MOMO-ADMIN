@@ -100,7 +100,7 @@ class NotificationService:
         self._send_async(task)
         
     def send_ticket_status_updated(self, ticket_id, user_phone, new_status):
-        """Dispatches notifications when a ticket's status changes."""
+        \"\"\"Dispatches notifications when a ticket's status changes.\"\"\"
         def task():
             if not user_phone:
                 return
@@ -112,6 +112,15 @@ class NotificationService:
                 'SUCCESS' if wa_res.get('success') else 'FAILED', 
                 wa_res.get('error', '')
             )
+            
+            # Insert In-App Notification
+            title = "Ticket Status Updated"
+            in_app_msg = f"Your support ticket {ticket_id} has been updated to {new_status}."
+            query = \"\"\"
+                INSERT INTO notifications (target_user_phone, title, message, category, read_status) 
+                VALUES (?, ?, ?, ?, ?)
+            \"\"\"
+            self._execute_db(query, (user_phone, title, in_app_msg, "ticket", "unread"))
             
         self._send_async(task)
 
